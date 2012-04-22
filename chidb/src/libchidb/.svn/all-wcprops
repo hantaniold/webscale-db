@@ -1,0 +1,89 @@
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/jgmp-235-p1/!svn/ver/30/chidb/src/libchidb
+END
+pager.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/jgmp-235-p1/!svn/ver/14/chidb/src/libchidb/pager.c
+END
+record.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/record.c
+END
+btree.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/jgmp-235-p1/!svn/ver/30/chidb/src/libchidb/btree.c
+END
+parser.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/parser.h
+END
+util.h
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/util.h
+END
+pager.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/pager.h
+END
+record.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/record.h
+END
+main.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/main.c
+END
+sql.lex
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/sql.lex
+END
+sql.y
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/sql.y
+END
+btree.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/jgmp-235-p1/!svn/ver/17/chidb/src/libchidb/btree.h
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/Makefile
+END
+parser.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/parser.c
+END
+util.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/jgmp-235-p1/!svn/ver/1/chidb/src/libchidb/util.c
+END
