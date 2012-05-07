@@ -7,6 +7,14 @@
 #define DBM_MAX_REGISTERS (256)
 #define DBM_MAX_CURSORS (256)
 
+//INTERNAL DBM RETURN TYPES 
+#define DBM_INVALID_INSTRUCTION (9000)
+#define DBM_OK (9001)
+#define DBM_OPENRW_ERROR (9002)
+//ONLY TO BE USED DURING DEV
+#define DBM_GENERAL_ERROR (9003)
+
+
 //INSTRUCTION DEFINITIONS
 #define DBM_OPENREAD (0)
 #define DBM_OPENWRITE (1)
@@ -47,7 +55,7 @@ typedef enum dbm_register_type dbm_register_type;
 
 struct dbm_register {
 	dbm_register_type type;
-	union {
+	union internal_data{
 		uint32_t int_val;
 		uint8_t *str_val;
 		uint8_t *bin_val;
@@ -68,8 +76,6 @@ typedef struct dbm_cursor dbm_cursor;
 
 struct dbm {
 	uint32_t program_counter;
-	uint32_t allocated_registers;
-	uint32_t allocated_cursors;
 	dbm_register registers[DBM_MAX_REGISTERS];
 	dbm_cursor cursors[DBM_MAX_CURSORS];
 	chidb *db;
@@ -96,13 +102,6 @@ int init_dbm(dbm *, chidb *);
 //THIS RESETS A DBM TO ITS INITIAL STATE
 int reset_dbm(dbm *);
 
-//ALLOCATES A NEW REGISTER IN THE DBM AND RETURNS ITS INTEGER INDEX
-int init_cursor(dbm *);
-
-//ALLOCATED A NEW REGISTER IN THE DBM AND RETURNS ITS INTEGER INDEX
-int init_register(dbm *, dbm_register_type);
-
-//TODO: IMPLEMENT THIS SOON
 //PRIVATE - SHOULD NOT BE CALLED BY ANYTHING BUT THE DBM ITSELF
 //THIS PROCESSES ONE INSTRUCTION IN THE DBM
 int tick_dbm(dbm *input_dbm, chidb_stmt stmt);

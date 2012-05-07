@@ -1,4 +1,5 @@
-#include "chidb.h"
+#include <chidb.h>
+#include <chidbInt.h>
 #include "btree.h"
 #include "dbm.h"
 
@@ -20,101 +21,96 @@ int init_dbm(dbm *input_dbm, chidb *db) {
 	}
 }
 
+//TODO: THIS NEEDS TO CLEAN Up ALL ALLOCATED CURSORS
 //THIS RESETS A DBM TO ITS INITIAL STATE
 int reset_dbm(dbm *input_dbm) {
 	input_dbm->program_counter = 0;
-	input_dbm->allocated_registers = 0;
-	input_dbm->allocated_cursors = 0;
+	return CHIDB_OK;
 }
-
-//ALLOCATES A NEW REGISTER IN THE DBM AND RETURNS ITS INTEGER INDEX
-int init_cursor(dbm *input_dbm) {
-	input_dbm->allocated_cursors += 1;
-}
-
-
-
-
-
-//ALLOCATED A NEW REGISTER IN THE DBM AND RETURNS ITS INTEGER INDEX
-int init_register(dbm *input_dbm, dbm_register_type type) {
-	input_dbm->allocated_registers += 1;
-	input_dbm->registers[input_dbm->allocated_registers].type = type;
-}
-
-
 
 //TODO: ERROR HANDLING
 int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 	switch (stmt.instruction) {
-		case DBM_OPENREAD:
-			//npage_t page_num = input_dbm->registers[stmt.P2].data.int_val;
-			//input_dbm->cursors[input_dbm->allocated_cursors].node = (BTreeNode *)calloc(1, sizeof(BTreeNode));
-			//return chidb_Btree_getNodeByPage(input_dbm->db->bt, page_num, &(input_dbm->cursors[input_dbm->allocated_cursors].node));
-		break;
 		case DBM_OPENWRITE:
-		break;
-		case DBM_CLOSE:
-		break;
+		case DBM_OPENREAD: {
+			uint32_t page_num = (input_dbm->registers[stmt.P2]).data.int_val;
+			input_dbm->cursors[stmt.P1].node = (BTreeNode *)calloc(1, sizeof(BTreeNode));
+			if (chidb_Btree_getNodeByPage(input_dbm->db->bt, page_num, &(input_dbm->cursors[stmt.P1].node)) == CHIDB_OK) {
+				return DBM_OK;
+			} else {
+				return DBM_OPENRW_ERROR;
+			}
+		}
+		case DBM_CLOSE: 
+			if (chidb_Btree_freeMemNode(input_dbm->db->bt, input_dbm->cursors[stmt.P1].node) == CHIDB_OK) {
+				free(input_dbm->cursors[stmt.P1].curr_cell);
+				free(input_dbm->cursors[stmt.P1].prev_cell);
+				free(input_dbm->cursors[stmt.P1].next_cell);
+				return DBM_OK;
+			} else {
+				return DBM_GENERAL_ERROR;
+			}
+			break;
 		case DBM_REWIND:
-		break;
+			break;
 		case DBM_NEXT:
-		break;
+			break;
 		case DBM_PREV:
-		break;
+			break;
 		case DBM_SEEK:
-		break;
+			break;
 		case DBM_SEEKGT:
-		break;
+			break;
 		case DBM_SEEKGE:
-		break;
+			break;
 		case DBM_COLUMN:
-		break;
+			break;
 		case DBM_KEY:
-		break;
+			break;
 		case DBM_INTEGER:
-		break;
+			break;
 		case DBM_STRING:
-		break;
+			break;
 		case DBM_NULL:
-		break;
+			break;
 		case DBM_RESULTROW:
-		break;
+			break;
 		case DBM_MAKERECORD:
-		break;
+			break;
 		case DBM_INSERT:
-		break;
+			break;
 		case DBM_EQ:
-		break;
+			break;
 		case DBM_NE:
-		break;
+			break;
 		case DBM_LT:
-		break;
+			break;
 		case DBM_LE:
-		break;
+			break;
 		case DBM_GT:
-		break;
+			break;
 		case DBM_GE:
-		break;
+			break;
 		case DBM_IDXGT:
-		break;
+			break;
 		case DBM_IDXLT:
-		break;
+			break;
 		case DBM_IDXLE:
-		break;
+			break;
 		case DBM_IDXKEY:
-		break;
+			break;
 		case DBM_IDXINSERT:
-		break;
+			break;
 		case DBM_CREATETABLE:
-		break;
+			break;
 		case DBM_CREATEINDEX:
-		break;
+			break;
 		case DBM_SCOPY:
-		break;
+			break;
 		case DBM_HALT:
-		break; 
+			break; 
 	}
+	return DBM_INVALID_INSTRUCTION;
 } //END OF tick_dbm
 
 //EOF
