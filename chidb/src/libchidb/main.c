@@ -13,7 +13,9 @@
 
 #include <stdlib.h>
 #include <chidb.h>
+#include <string.h>
 #include "btree.h"
+#include "parser.h"
 #include "record.h"
 
 /* This file currently provides only a very basic implementation
@@ -85,6 +87,115 @@ int chidb_close(chidb *db)
 
 int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
 {
+    int err;
+
+    // Call the SQL parser
+    SQLStatement *sql_stmt;
+    err = chidb_parser(sql, &sql_stmt);
+    if(err == CHIDB_EINVALIDSQL)
+        return CHIDB_EINVALIDSQL;
+
+    // Check that the query is valid against our schema table
+    switch(sql_stmt->type) {
+        case STMT_SELECT:
+        {
+            // Check that all table names are valid
+            SchemaTableRow *schema_row = NULL;
+            for(int i = 0; i < sql_stmt->query.select.from_ntables; i++) {
+                for(int j = 0; i < db->bt->schema_table_size; j++) {
+                    if(!strcmp(sql_stmt->query.select.from_tables[i], db->bt->schema_table[j]->item_name)) {
+                        schema_row = db->bt->schema_table[j];
+                        break;
+                    }
+                }
+                if(schema_row)
+                    break;
+            }
+            if(!schema_row)
+                return CHIDB_EINVALIDSQL;
+
+            // Check that all column names are valid
+            SQLStatement *create_table_stmt;
+            chidb_parser(schema_row->sql, &create_table_stmt);
+
+            for(int i = 0; i < sql_stmt->query.select.select_ncols; i++) {
+                int match = 0;
+                for(int j = 0; j < create_table_stmt->query.createTable.ncols; j++) {
+                    if(!strcmp(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[j].name)) {
+                        match = 1;
+                        break;
+                    }
+                }
+                if(!match)
+                    return CHIDB_EINVALIDSQL;
+            }
+
+            // Check that all column names in the WHERE clause are valid
+            int match = 0;
+            uint8_t type = 0;
+            for(int i = 0; i < sql_stmt->query.select.where_nconds; i++) {
+                for(int j = 0; j < create_table_stmt->query.createTable.ncols; j++) {
+                    if(!strcmp(sql_stmt->query.select.where_conds[i].op1.name, create_table_stmt->query.createTable.cols[j].name)) {
+                        uint8_t op2t = sql_stmt->query.select.where_conds[i].op2Type;
+                        if (op2t != OP2_COL && op2t == create_table_stmt->query.createTable.cols[j].type)
+                            match = 1;
+                        else {
+                            match = 1;
+                            type = create_table_stmt->query.createTable.cols[j].type;
+                        }
+                    }
+                }
+                if(!match)
+                    return CHIDB_EINVALIDSQL;
+                if(sql_stmt->query.select.where_conds[i].op2Type == OP2_COL) {
+                    match = 0;
+
+                    for(int i = 0; i < sql_stmt->query.select.where_nconds; i++) {
+                        for(int j = 0; j < create_table_stmt->query.createTable.ncols; j++) {
+                            if(!strcmp(sql_stmt->query.select.where_conds[i].op2.col.name, create_table_stmt->query.createTable.cols[j].name) && type == create_table_stmt->query.createTable.cols[j].type) {
+                                match = 1;
+                            }
+                        }
+                        if(!match)
+                            return CHIDB_EINVALIDSQL;
+                    }
+                }
+            }
+            free(create_table_stmt);
+
+            break;
+        }
+        case STMT_INSERT:
+        {
+            // Check that all table names are valid
+            SchemaTableRow *schema_row = NULL;
+            for(int i = 0; i < db->bt->schema_table_size; i++) {
+                if(!strcmp(sql_stmt->query.insert.table, db->bt->schema_table[i]->item_name)) {
+                    schema_row = db->bt->schema_table[i];
+                    break;
+                }
+            }
+            if(!schema_row)
+                return CHIDB_EINVALIDSQL;
+
+            // Check that the right number of values are being inserted
+            SQLStatement *create_table_stmt;
+            chidb_parser(schema_row->sql, &create_table_stmt);
+            if(sql_stmt->query.insert.nvalues != create_table_stmt->query.createTable.ncols)
+                return CHIDB_EINVALIDSQL;
+            
+            // Check value types
+            for(int i = 0; i < sql_stmt->query.insert.nvalues; i++) {
+                if(sql_stmt->query.insert.values[i].type != create_table_stmt->query.createTable.cols[i].type)
+                    return CHIDB_EINVALIDSQL;
+            }
+            break;
+        }
+    }
+
+
+
+
 	return CHIDB_OK;
 }
 
