@@ -44,6 +44,11 @@ typedef struct chidb_stmt chidb_stmt;
  */
 int chidb_open(const char *file, chidb **db); 
 
+/* Loads schema into memory in the schema_table entry
+ * of the chidb object.
+ *
+ */
+int chidb_load_schema(chidb * db);
 
 /* Prepares a SQL statement for execution
  *
