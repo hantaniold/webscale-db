@@ -268,7 +268,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 }
 
                 // Store the column value
-                *stmt = realloc(*stmt, (numlimes + 1) * sizeof(chidb_stmt));
+                *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
                 (*stmt)[numlines].instruction = DBM_COLUMN;    // Get a column value
                 (*stmt)[numlines].P1 = 0;                       // using cursor 0 (TODO: as above)
                 (*stmt)[numlines].P2 = colnum;                  // from column number colnum
