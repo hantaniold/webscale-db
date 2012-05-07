@@ -65,11 +65,23 @@ struct BTreeHdr
     uint32_t f5[8];
 };
 
+struct SchemaTableRow {
+    char * item_type; // table or index
+    char * item_name; // name of table or index
+    char * assoc_table_name; //name of table, or indexed table
+    int root_page;
+    char * sql;
+
+};
+typedef struct SchemaTableRow SchemaTableRow;
+
 /* The BTree struct represent a "B-Tree file". It contains a pointer to the
  * chidb database it is a part of, and a pointer to a Pager, which it will
  * use to access pages on the file */
 struct BTree
 {
+    SchemaTableRow ** schema_table;
+    int schema_table_size;
 	chidb *db;
 	Pager *pager;
 };
