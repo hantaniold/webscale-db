@@ -40,7 +40,6 @@
 #define DBM_CREATEINDEX (29)
 #define DBM_SCOPY (30)
 #define DBM_HALT (31)
-#define DBM_ (32)
 
 enum dbm_register_type {INTEGER, STRING, BINARY, NL};
 
@@ -49,9 +48,9 @@ typedef enum dbm_register_type dbm_register_type;
 struct dbm_register {
 	dbm_register_type type;
 	union {
-		int int_val;
-		char *str_val;
-		char *bin_val;
+		uint32_t int_val;
+		uint8_t *str_val;
+		uint8_t *bin_val;
 	} data;
 };
 
@@ -68,11 +67,12 @@ struct dbm_cursor {
 typedef struct dbm_cursor dbm_cursor;
 
 struct dbm {
-	unsigned int program_counter;
-	unsigned int allocated_registers;
-	unsigned int allocated_cursors;
+	uint32_t program_counter;
+	uint32_t allocated_registers;
+	uint32_t allocated_cursors;
 	dbm_register registers[DBM_MAX_REGISTERS];
 	dbm_cursor cursors[DBM_MAX_CURSORS];
+	chidb *db;
 };
 
 typedef struct dbm dbm;
@@ -91,7 +91,7 @@ struct chidb_stmt {
 };
 
 //THIS WILL CREATE A NEW DBM STRUCT
-int init_dbm(dbm *);
+int init_dbm(dbm *, chidb *);
 
 //THIS RESETS A DBM TO ITS INITIAL STATE
 int reset_dbm(dbm *);
@@ -105,6 +105,6 @@ int init_register(dbm *, dbm_register_type);
 //TODO: IMPLEMENT THIS SOON
 //PRIVATE - SHOULD NOT BE CALLED BY ANYTHING BUT THE DBM ITSELF
 //THIS PROCESSES ONE INSTRUCTION IN THE DBM
-//int tick_dbm(dbm *, chidb_stmt *);
+int tick_dbm(dbm *input_dbm, chidb_stmt stmt);
 
 
