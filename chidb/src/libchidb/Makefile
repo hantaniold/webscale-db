@@ -1,20 +1,24 @@
-all: libchidb shell-dummy tests
+OBJS = main.o util.o btree.o pager.o record.o parser.o sql.yy.o sql.tab.o dbm.o
+DEPS = $(OBJS:.o=.d)
+CC = gcc
+CFLAGS = -I../../include -g3 -Wall -fpic -std=c99 -MMD -MP -D__key_t_defined -D_GNU_SOURCE
+LDFLAGS = -shared
+LIB = ../../libchidb.so
 
-.PHONY: libchidb tests clean
-     
-libchidb: 
-	$(MAKE) -C src/libchidb
-
-shell: 
-	$(MAKE) -C src/shell
-
-shell-dummy: 
-	$(MAKE) -C src/shell ../../chidb-dummy
+all: $(LIB)
 	
-tests: 
-	$(MAKE) -C tests
+$(LIB): $(OBJS)
+	$(CC) $(LDFLAGS) -o$(LIB) $(OBJS)
 
-clean: 
-	$(MAKE) clean -C src/libchidb
-	$(MAKE) clean -C src/shell	
-	$(MAKE) clean -C tests	
+%.d: %.c
+
+clean:
+	-rm -f $(OBJS) $(LIB) *.d *.yy.c *.yy.h *.tab.[hc]
+	
+-include $(DEPS)
+
+sql.tab.c: sql.y
+	yacc sql.y -b sql
+			
+sql.yy.c: sql.tab.c sql.lex
+	lex --header-file=sql.yy.h -o sql.yy.c sql.lex 
