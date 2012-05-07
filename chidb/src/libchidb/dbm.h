@@ -13,6 +13,10 @@
 #define DBM_OPENRW_ERROR (9002)
 //ONLY TO BE USED DURING DEV
 #define DBM_GENERAL_ERROR (9003)
+//
+#define DBM_REGISTER_TYPE_MISMATCH (9004)
+#define DBM_DATA_REGISTER_LENGTH_MISMATCH (9005)
+
 
 
 //INSTRUCTION DEFINITIONS
@@ -55,6 +59,7 @@ typedef enum dbm_register_type dbm_register_type;
 
 struct dbm_register {
 	dbm_register_type type;
+	size_t data_len; //TO BE USED WHEN STORING STRINGS AND BINARY VALUES
 	union internal_data{
 		uint32_t int_val;
 		uint8_t *str_val;
@@ -104,6 +109,7 @@ int reset_dbm(dbm *);
 
 //PRIVATE - SHOULD NOT BE CALLED BY ANYTHING BUT THE DBM ITSELF
 //THIS PROCESSES ONE INSTRUCTION IN THE DBM
+//INCREMENTS THE PROGRAM COUNTER BY ONE IF NO JUMP OCCURS
 int tick_dbm(dbm *input_dbm, chidb_stmt stmt);
 
 
