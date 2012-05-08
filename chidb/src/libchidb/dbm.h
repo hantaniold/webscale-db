@@ -88,11 +88,6 @@ struct dbm {
 
 typedef struct dbm dbm;
 
-/*
-* TODO: TALK ABOUT THIS
-* TENTATIVE def of chidb_stmt
-*/
-
 struct chidb_stmt {
 	uint32_t instruction;
 	uint32_t P1;

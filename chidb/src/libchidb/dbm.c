@@ -235,7 +235,11 @@ int operation_ge(dbm *input_dbm, chidb_stmt stmt) {
 		return DBM_REGISTER_TYPE_MISMATCH;
 	}
 }
-
+int operation_key(dbm *input_dbm, chidb_stmt stmt) {
+	input_dbm->registers[stmt.P2].type = INTEGER;
+	input_dbm->registers[stmt.P2].data.int_val = (uint32_t)input_dbm->cursors[stmt.P1].curr_cell->key;
+	return DBM_OK;
+}
 
 //TODO: BETTER ERROR HANDLING
 int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
@@ -277,6 +281,7 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 		case DBM_COLUMN:
 			break;
 		case DBM_KEY:
+			return operation_key(input_dbm, stmt);
 			break;
 		case DBM_INTEGER:
 			break;
