@@ -48,6 +48,7 @@ int chidb_open(const char *file, chidb **db);
  * of the chidb object.
  *
  */
+void chidb_print_schema(chidb * db);
 int chidb_load_schema(chidb * db);
 
 /* Prepares a SQL statement for execution
