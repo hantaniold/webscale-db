@@ -34,16 +34,21 @@ int chidb_open(const char *file, chidb **db)
 	chidb_Btree_open(file, *db, &(*db)->bt);
 	
     chidb_load_schema(*db);
+    chidb_print_schema(*db);
 
-    //Look at the root node? Traverse children and parse all
-    //schema information into something using chidb_DBRecord_getString
-    //text, text, text, integer, text
-    //item type, table name, associated name, root page, sql statement
-    //uh okay
-    //Use chidb_DBRecord_create 
 	return CHIDB_OK;
 }
 
+void chidb_print_schema(chidb *  db) {
+    int schema_row_index = 0;
+    printf("=== Printing Schema ===\n");
+    for (;schema_row_index < db->bt->schema_table_size;  schema_row_index++) {
+
+       printf("Entry %d\n",schema_row_index);
+       printf("%s|%s|%s|%d|%s|\n",db->bt->schema_table[schema_row_index]->item_type, db->bt->schema_table[schema_row_index]->item_name, db->bt->schema_table[schema_row_index]->assoc_table_name, db->bt->schema_table[schema_row_index]->root_page,db->bt->schema_table[schema_row_index]->sql);
+       return;
+    }
+}   
 int chidb_load_schema(chidb * db) {
     DBRecord * dbr;
     BTreeNode * btn;
@@ -52,12 +57,9 @@ int chidb_load_schema(chidb * db) {
     int schema_size = 0;
     int schema_row_index = 0;
     for (int i = 0; i < btn->n_cells; i++) {
-        printf("Getting schema %d\n",i);
         chidb_Btree_getCell(btn, i, cell);
-        printf("Cell type: %x\n",cell->type);
         if (cell->type == PGTYPE_TABLE_LEAF) {
             schema_size++;
-            //Maybe check retval of realloc
             db->bt->schema_table = realloc(db->bt->schema_table,schema_size*sizeof(SchemaTableRow *));
             db->bt->schema_table[schema_row_index] = calloc(1,sizeof(SchemaTableRow));
 
@@ -69,7 +71,6 @@ int chidb_load_schema(chidb * db) {
             chidb_DBRecord_getString(dbr,4,&db->bt->schema_table[schema_row_index]->sql);
 
             
-            printf("%s\n%s\n%s\n%d\n%s\n",db->bt->schema_table[schema_row_index]->item_type, db->bt->schema_table[schema_row_index]->item_name, db->bt->schema_table[schema_row_index]->assoc_table_name, db->bt->schema_table[schema_row_index]->root_page,db->bt->schema_table[schema_row_index]->sql);
             schema_row_index++;
         }
     }
@@ -82,6 +83,11 @@ int chidb_load_schema(chidb * db) {
 int chidb_close(chidb *db)
 {
 	chidb_Btree_close(db->bt);
+
+    for (int i = 0; i < db->bt->schema_table_size; i++) {
+        free(db->bt->schema_table[i]);
+    }
+    free(db->bt->schema_table);
 	free(db);
 	return CHIDB_OK;
 } 
