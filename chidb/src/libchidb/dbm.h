@@ -62,7 +62,7 @@ struct dbm_register {
 	size_t data_len; //TO BE USED WHEN STORING STRINGS AND BINARY VALUES
 	union internal_data{
 		uint32_t int_val;
-		uint8_t *str_val;
+		char *str_val;
 		uint8_t *bin_val;
 	} data;
 };
