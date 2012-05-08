@@ -15,6 +15,13 @@
 int init_dbm(dbm *input_dbm, chidb *db) {
 	input_dbm = (dbm *)calloc(1, sizeof(dbm));
 	input_dbm->db = db;
+	for (int i = 0; i < DBM_MAX_REGISTERS; ++i) {
+		input_dbm->registers[i].touched = 0;
+		input_dbm->registers[i].type = NL;
+	}
+	for (int i = 0; i < DBM_MAX_CURSORS; ++i) {
+		input_dbm->cursors[i].touched = 0;
+	}
 	if (input_dbm == NULL) {
 		return CHIDB_ENOMEM;
 	} else {
@@ -26,6 +33,29 @@ int init_dbm(dbm *input_dbm, chidb *db) {
 //THIS RESETS A DBM TO ITS INITIAL STATE
 int reset_dbm(dbm *input_dbm) {
 	input_dbm->program_counter = 0;
+	for (int i = 0; i < DBM_MAX_REGISTERS; ++i) {
+		dbm_register myreg = input_dbm->registers[i]; 
+		if (myreg.touched == 1) {
+			if (myreg.type == STRING) {
+				free(myreg.data.str_val);
+			}
+			if (myreg.type == BINARY) {
+				free(myreg.data.bin_val);
+			}
+		}
+		myreg.touched = 0;
+		myreg.type = NL;
+	}
+	for (int i = 0; i < DBM_MAX_CURSORS; ++i) {
+		dbm_cursor mycursor = input_dbm->cursors[i];
+		if (mycursor.touched == 1) {
+			free(mycursor.node);
+			free(mycursor.curr_cell);
+			free(mycursor.prev_cell);
+			free(mycursor.next_cell);
+		}
+		mycursor.touched = 1;
+	}
 	return CHIDB_OK;
 }
 
@@ -239,18 +269,22 @@ int operation_ge(dbm *input_dbm, chidb_stmt stmt) {
 int operation_key(dbm *input_dbm, chidb_stmt stmt) {
 	input_dbm->registers[stmt.P2].type = INTEGER;
 	input_dbm->registers[stmt.P2].data.int_val = (uint32_t)input_dbm->cursors[stmt.P1].curr_cell->key;
+	input_dbm->registers[stmt.P2].touched = 1;
 	return DBM_OK;
 }
 
 int operation_integer(dbm *input_dbm, chidb_stmt stmt) {
 	input_dbm->registers[stmt.P2].type = INTEGER;
 	input_dbm->registers[stmt.P2].data.int_val = stmt.P1;
+	input_dbm->registers[stmt.P2].touched = 1;
 	return DBM_OK;
 }
 
 int operation_string(dbm *input_dbm, chidb_stmt stmt) {
 	input_dbm->registers[stmt.P2].type = STRING;
 	input_dbm->registers[stmt.P2].data.str_val = (char *)malloc(sizeof(char) * stmt.P1);
+	input_dbm->registers[stmt.P2].data_len = (size_t)stmt.P1;
+	input_dbm->registers[stmt.P2].touched = 1;
 	strcpy(input_dbm->registers[stmt.P2].data.str_val, (char *)stmt.P4);
 	return DBM_OK;
 }
@@ -263,6 +297,7 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 		case DBM_OPENWRITE:
 		case DBM_OPENREAD: {
 			uint32_t page_num = (input_dbm->registers[stmt.P2]).data.int_val;
+			input_dbm->cursors[stmt.P1].touched = 1;
 			input_dbm->cursors[stmt.P1].node = (BTreeNode *)calloc(1, sizeof(BTreeNode));
 			if (chidb_Btree_getNodeByPage(input_dbm->db->bt, page_num, &(input_dbm->cursors[stmt.P1].node)) == CHIDB_OK) {
 				input_dbm->program_counter += 1;

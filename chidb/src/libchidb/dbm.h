@@ -60,6 +60,7 @@ typedef enum dbm_register_type dbm_register_type;
 struct dbm_register {
 	dbm_register_type type;
 	size_t data_len; //TO BE USED WHEN STORING STRINGS AND BINARY VALUES
+	uint8_t touched;
 	union internal_data{
 		uint32_t int_val;
 		char *str_val;
@@ -71,6 +72,7 @@ typedef struct dbm_register dbm_register;
 
 //THIS MAY CHANGE
 struct dbm_cursor {
+	uint8_t touched;
 	BTreeNode *node;
 	BTreeCell *curr_cell;
 	BTreeCell *prev_cell;
