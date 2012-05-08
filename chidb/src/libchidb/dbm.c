@@ -66,6 +66,175 @@ int operation_eq(dbm *input_dbm, chidb_stmt stmt) {
 		return DBM_REGISTER_TYPE_MISMATCH;
 	}
 }
+int operation_ne(dbm *input_dbm, chidb_stmt stmt) {
+	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
+		switch (input_dbm->registers[stmt.P1].type) {
+			case INTEGER:
+				if (input_dbm->registers[stmt.P1].data.int_val != input_dbm->registers[stmt.P3].data.int_val) {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case STRING:
+				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) != 0){
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case BINARY:
+				if ((memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) != 0) || (input_dbm->registers[stmt.P1].data_len != input_dbm->registers[stmt.P3].data_len)) {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case NL:
+				input_dbm->program_counter = stmt.P2;
+				break;
+		}
+		return DBM_OK;
+	} else {
+		return DBM_REGISTER_TYPE_MISMATCH;
+	}
+}
+int operation_lt(dbm *input_dbm, chidb_stmt stmt) {
+	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
+		switch (input_dbm->registers[stmt.P1].type) {
+			case INTEGER:
+				if (input_dbm->registers[stmt.P1].data.int_val < input_dbm->registers[stmt.P3].data.int_val) {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case STRING:
+				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) < 0){
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case BINARY:
+				//TODO: UNEQUAL COMPARE LENGTHS CASE
+				if (memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) < 0) {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case NL:
+				input_dbm->program_counter = stmt.P2;
+				break;
+		}
+		return DBM_OK;
+	} else {
+		return DBM_REGISTER_TYPE_MISMATCH;
+	}
+}
+int operation_le(dbm *input_dbm, chidb_stmt stmt) {
+	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
+		switch (input_dbm->registers[stmt.P1].type) {
+			case INTEGER:
+				if (input_dbm->registers[stmt.P1].data.int_val <= input_dbm->registers[stmt.P3].data.int_val) {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case STRING:
+				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) <= 0){
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case BINARY:
+				//TODO: UNEQUAL COMPARE LENGTHS CASE
+				if (memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) <= 0) {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case NL:
+				input_dbm->program_counter = stmt.P2;
+				break;
+		}
+		return DBM_OK;
+	} else {
+		return DBM_REGISTER_TYPE_MISMATCH;
+	}
+}
+int operation_gt(dbm *input_dbm, chidb_stmt stmt) {
+	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
+		switch (input_dbm->registers[stmt.P1].type) {
+			case INTEGER:
+				if (input_dbm->registers[stmt.P1].data.int_val > input_dbm->registers[stmt.P3].data.int_val) {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case STRING:
+				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) > 0){
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case BINARY:
+				//TODO: UNEQUAL COMPARE LENGTHS CASE
+				if (memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) > 0) {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case NL:
+				input_dbm->program_counter = stmt.P2;
+				break;
+		}
+		return DBM_OK;
+	} else {
+		return DBM_REGISTER_TYPE_MISMATCH;
+	}
+}
+int operation_ge(dbm *input_dbm, chidb_stmt stmt) {
+	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
+		switch (input_dbm->registers[stmt.P1].type) {
+			case INTEGER:
+				if (input_dbm->registers[stmt.P1].data.int_val >= input_dbm->registers[stmt.P3].data.int_val) {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case STRING:
+				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) >= 0){
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case BINARY:
+				//TODO: UNEQUAL COMPARE LENGTHS CASE
+				if (memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) >= 0) {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case NL:
+				input_dbm->program_counter = stmt.P2;
+				break;
+		}
+		return DBM_OK;
+	} else {
+		return DBM_REGISTER_TYPE_MISMATCH;
+	}
+}
 
 
 //TODO: BETTER ERROR HANDLING
@@ -125,14 +294,19 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			return operation_eq(input_dbm, stmt);
 			break;
 		case DBM_NE:
+			return operation_ne(input_dbm, stmt);
 			break;
 		case DBM_LT:
+			return operation_lt(input_dbm, stmt);
 			break;
 		case DBM_LE:
+			return operation_le(input_dbm, stmt);
 			break;
 		case DBM_GT:
+			return operation_gt(input_dbm, stmt);
 			break;
 		case DBM_GE:
+			return operation_ge(input_dbm, stmt);
 			break;
 		case DBM_IDXGT:
 			break;
