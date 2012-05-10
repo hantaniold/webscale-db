@@ -29,10 +29,28 @@ int init_dbm(dbm *input_dbm, chidb *db) {
 	}
 }
 
+int operation_cursor_close(dbm *input_dbm, uint32_t cursor_id) {
+	dbm_cursor mycursor = input_dbm->cursors[cursor_id];
+	if (mycursor.touched == 1) {
+			if (chidb_Btree_freeMemNode(input_dbm->db->bt, input_dbm->cursors[cursor_id].node) == CHIDB_OK) {
+				free(mycursor.node);
+				free(mycursor.curr_cell);
+				free(mycursor.prev_cell);
+				free(mycursor.next_cell);
+			} else {
+				return DBM_MEMORY_FREE_ERROR;
+			}
+	}
+	mycursor.touched = 0;
+	return DBM_OK;
+}
+
 //TODO: THIS NEEDS TO CLEAN Up ALL ALLOCATED CURSORS
 //THIS RESETS A DBM TO ITS INITIAL STATE
 int reset_dbm(dbm *input_dbm) {
 	input_dbm->program_counter = 0;
+	input_dbm->tick_result = DBM_OK;
+	input_dbm->readwritestate = 0;
 	for (int i = 0; i < DBM_MAX_REGISTERS; ++i) {
 		dbm_register myreg = input_dbm->registers[i]; 
 		if (myreg.touched == 1) {
@@ -46,15 +64,12 @@ int reset_dbm(dbm *input_dbm) {
 		myreg.touched = 0;
 		myreg.type = NL;
 	}
-	for (int i = 0; i < DBM_MAX_CURSORS; ++i) {
+	for (uint32_t i = 0; i < DBM_MAX_CURSORS; ++i) {
 		dbm_cursor mycursor = input_dbm->cursors[i];
 		if (mycursor.touched == 1) {
-			free(mycursor.node);
-			free(mycursor.curr_cell);
-			free(mycursor.prev_cell);
-			free(mycursor.next_cell);
+			operation_cursor_close(input_dbm, i);
 		}
-		mycursor.touched = 1;
+		mycursor.touched = 0;
 	}
 	return CHIDB_OK;
 }
@@ -306,17 +321,16 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 				return DBM_OPENRW_ERROR;
 			}
 		}
-		case DBM_CLOSE: 
-			if (chidb_Btree_freeMemNode(input_dbm->db->bt, input_dbm->cursors[stmt.P1].node) == CHIDB_OK) {
-				free(input_dbm->cursors[stmt.P1].curr_cell);
-				free(input_dbm->cursors[stmt.P1].prev_cell);
-				free(input_dbm->cursors[stmt.P1].next_cell);
+		case DBM_CLOSE: {
+			int retval = operation_cursor_close(input_dbm, stmt.P1);
+			if (retval == DBM_OK) {
 				input_dbm->program_counter += 1;
 				return DBM_OK;
 			} else {
-				return DBM_GENERAL_ERROR;
+				return retval;
 			}
 			break;
+		}
 		case DBM_REWIND:
 			break;
 		case DBM_NEXT:

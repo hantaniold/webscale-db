@@ -16,6 +16,7 @@
 //
 #define DBM_REGISTER_TYPE_MISMATCH (9004)
 #define DBM_DATA_REGISTER_LENGTH_MISMATCH (9005)
+#define DBM_MEMORY_FREE_ERROR (9006)
 
 
 
@@ -83,6 +84,8 @@ typedef struct dbm_cursor dbm_cursor;
 
 struct dbm {
 	uint32_t program_counter;
+	uint32_t tick_result; //stores the result of the last tick operation - used for error tracking
+	uint8_t readwritestate;
 	dbm_register registers[DBM_MAX_REGISTERS];
 	dbm_cursor cursors[DBM_MAX_CURSORS];
 	chidb *db;
