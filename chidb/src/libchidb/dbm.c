@@ -304,7 +304,30 @@ int operation_string(dbm *input_dbm, chidb_stmt stmt) {
 	return DBM_OK;
 }
 
+int operation_rewind(dbm *input_dbm, chidb_stmt stmt) {
+	input_dbm->cursors[stmt.P1].curr_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
+	input_dbm->cursors[stmt.P1].next_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
+	input_dbm->cursors[stmt.P1].prev_cell = NULL;
+	input_dbm->cursors[stmt.P1].cell_num = 0; 
+	input_dbm->cursors[stmt.P1].touched = 1;
+	int retval = chidb_Btree_getCell(input_dbm->cursors[stmt.P1].node, 0, input_dbm->cursors[stmt.P1].curr_cell);	
+	int retval2 = chidb_Btree_getCell(input_dbm->cursors[stmt.P1].node, 1, input_dbm->cursors[stmt.P1].next_cell);
+	if (retval2 != CHIDB_OK) {
+		input_dbm->cursors[stmt.P1].next_cell = NULL;
+	}
+	if (retval == CHIDB_OK) {
+		return DBM_OK;
+	} else {
+		return DBM_CELL_NUMBER_BOUNDS;
+	}
+}
 
+int operation_next(dbm *input_dbm, chidb_stmt stmt) {
+	/*
+	* IMPLEMENT LATER
+	*/
+	return DBM_OK;
+}
 
 //TODO: BETTER ERROR HANDLING
 int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
@@ -332,6 +355,13 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_REWIND:
+			if (operation_rewind(input_dbm, stmt) == DBM_OK) {
+				input_dbm->program_counter += 1;
+				return DBM_OK;
+			} else {
+				input_dbm->program_counter = stmt.P2;
+				return DBM_OK;
+			}
 			break;
 		case DBM_NEXT:
 			break;

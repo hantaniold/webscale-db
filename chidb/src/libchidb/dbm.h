@@ -17,6 +17,7 @@
 #define DBM_REGISTER_TYPE_MISMATCH (9004)
 #define DBM_DATA_REGISTER_LENGTH_MISMATCH (9005)
 #define DBM_MEMORY_FREE_ERROR (9006)
+#define DBM_CELL_NUMBER_BOUNDS (9007)
 
 
 
@@ -74,6 +75,7 @@ typedef struct dbm_register dbm_register;
 //THIS MAY CHANGE
 struct dbm_cursor {
 	uint8_t touched;
+	uint32_t cell_num;
 	BTreeNode *node;
 	BTreeCell *curr_cell;
 	BTreeCell *prev_cell;
