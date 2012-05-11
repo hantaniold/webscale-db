@@ -208,17 +208,6 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
     switch(sql_stmt->type) {
         case STMT_SELECT:
         {
-            // Basic outline:
-            // 1) Store the page number
-            // 2) Store any WHERE literal
-            // 3) OpenRead
-            // 4) Rewind
-            // 5) Select columns (doing any needed comparisons after each column selection)
-            //    5a) If all is well, ResultRow, then Next
-            //    5b) If all is not well, jump to a Next
-            // 6) Close
-            // 7) Halt
-
             int numlines = 0;
             int rmax = 0;
 
@@ -241,7 +230,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
             (*stmt)[numlines].instruction = DBM_REWIND;    // Rewind to the beginning of the B-Tree
             (*stmt)[numlines].P1 = 0;                       // using cursor 0 (TODO: as above)
-            (*stmt)[numlines].P2 = -1;                      // and if the table is empty, jump to CLOSE (TODO)
+            (*stmt)[numlines].P2 = -1;                      // and if the table is empty, jump to CLOSE
             numlines++;
 
             // Select columns (0, 1, or 2) from WHERE clause
@@ -377,6 +366,75 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
         }
         case STMT_INSERT:
         {
+            int numlines = 0;
+            int rmax = 0;
+
+            // Store the page number
+            *stmt = malloc(sizeof(chidb_stmt));
+            (*stmt)[numlines].instruction = DBM_INTEGER;    // Integer type
+            (*stmt)[numlines].P1 = root_page;               // Store the root page
+            (*stmt)[numlines].P2 = 0;                       // into register 0
+            numlines++;
+
+            // Open the B-Tree
+            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
+            (*stmt)[numlines].instruction = DBM_OPENWRITE;  // Open a B-Tree
+            (*stmt)[numlines].P1 = 0;                       // with cursor 0 (TODO: how should cursor numbers be assigned?)
+            (*stmt)[numlines].P2 = 0;                       // on the page in register 0
+            (*stmt)[numlines].P3 = ncols;                   // having ncols columns
+            numlines++;
+
+            // Store the new record contents into registers
+            for(int i = 0; i < sql_stmt->query.insert.nvalues; i++) {
+                *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
+                switch(sql_stmt->query.insert.values[i].type) {
+                    case INS_INT:
+                        (*stmt)[numlines].instruction = DBM_INTEGER;    // Store an integer value
+                        (*stmt)[numlines].P1 = sql_stmt->query.insert.values[i].val.integer;
+                        (*stmt)[numlines].P2 = ++rmax;
+                        break;
+                    case INS_STR:
+                        (*stmt)[numlines].instruction = DBM_STRING;     // Store a string pointer
+                        (*stmt)[numlines].P1 = strlen(sql_stmt->query.insert.values[i].val.string) + 1;
+                        (*stmt)[numlines].P2 = ++rmax;
+                        (*stmt)[numlines].P4 = sql_stmt->query.insert.values[i].val.string;
+                        break;
+                    case INS_NULL:
+                        (*stmt)[numlines].instruction = DBM_NULL;       // Store a null value
+                        (*stmt)[numlines].P2 = ++rmax;
+                        break;
+                }
+                numlines++;
+            }
+            
+            // Make a new record
+            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
+            (*stmt)[numlines].instruction = DBM_MAKERECORD;             // Create a new record
+            (*stmt)[numlines].P1 = 1;                                   // beginning with register 1
+            (*stmt)[numlines].P2 = rmax - 1;                            // with this many columns
+            (*stmt)[numlines].P3 = ++rmax;                              // and store the record in a new register
+            numlines++;
+            
+            // Insert the new record
+            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
+            (*stmt)[numlines].instruction = DBM_INSERT;                 // Insert the new record
+            (*stmt)[numlines].P1 = 0;                                   // using cursor 0 (TODO)
+            (*stmt)[numlines].P2 = rmax;                                // with the record in register rmax
+            (*stmt)[numlines].P3 = create_table_stmt->query.createTable.pk; // with primary key in column pk in this register
+            numlines++;
+
+            // Close the cursor
+            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
+            (*stmt)[numlines].instruction = DBM_CLOSE;      // Close the cursor
+            (*stmt)[numlines].P1 = 0;                       // number 0 (TODO)
+            numlines++;
+
+            // Halt execution
+            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
+            (*stmt)[numlines].instruction = DBM_HALT;       // Halt execution
+            (*stmt)[numlines].P1 = 0;                       // with return value 0
+            numlines++;
+
             break;
         }
     }
