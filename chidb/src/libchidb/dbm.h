@@ -95,12 +95,20 @@ struct dbm {
 
 typedef struct dbm dbm;
 
-struct chidb_stmt {
+struct chidb_instruction {
 	uint32_t instruction;
 	uint32_t P1;
 	uint32_t P2;
 	uint32_t P3;
 	uint32_t P4;
+};
+typedef struct chidb_instruction chidb_instruction;
+
+struct chidb_stmt {
+    chidb_instruction *ins;
+    int num_instructions;
+    DBRecord *record;
+    chidb *db;
 };
 
 //THIS WILL CREATE A NEW DBM STRUCT
