@@ -74,27 +74,27 @@ int reset_dbm(dbm *input_dbm) {
 	return CHIDB_OK;
 }
 
-int operation_eq(dbm *input_dbm, chidb_stmt stmt) {
-	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
-		switch (input_dbm->registers[stmt.P1].type) {
+int operation_eq(dbm *input_dbm, chidb_instruction inst) {
+	if (input_dbm->registers[inst.P1].type == input_dbm->registers[inst.P3].type) {
+		switch (input_dbm->registers[inst.P1].type) {
 			case INTEGER:
-				if (input_dbm->registers[stmt.P1].data.int_val == input_dbm->registers[stmt.P3].data.int_val) {
-					input_dbm->program_counter = stmt.P2;
+				if (input_dbm->registers[inst.P1].data.int_val == input_dbm->registers[inst.P3].data.int_val) {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case STRING:
-				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) == 0){
-					input_dbm->program_counter = stmt.P2;
+				if (strcmp(input_dbm->registers[inst.P1].data.str_val, input_dbm->registers[inst.P3].data.str_val) == 0){
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case BINARY:
-				if (input_dbm->registers[stmt.P1].data_len == input_dbm->registers[stmt.P3].data_len) {
-					if (memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) == 0) {
-						input_dbm->program_counter = stmt.P2;
+				if (input_dbm->registers[inst.P1].data_len == input_dbm->registers[inst.P3].data_len) {
+					if (memcmp(input_dbm->registers[inst.P1].data.bin_val, input_dbm->registers[inst.P3].data.bin_val, input_dbm->registers[inst.P1].data_len) == 0) {
+						input_dbm->program_counter = inst.P2;
 					} else {
 						input_dbm->program_counter += 1;	
 					}
@@ -103,8 +103,8 @@ int operation_eq(dbm *input_dbm, chidb_stmt stmt) {
 				} 
 				break;
 			case NL:
-				if (input_dbm->registers[stmt.P1].type == NL && input_dbm->registers[stmt.P3].type == NL)  {
-					input_dbm->program_counter = stmt.P2;
+				if (input_dbm->registers[inst.P1].type == NL && input_dbm->registers[inst.P3].type == NL)  {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
@@ -115,33 +115,33 @@ int operation_eq(dbm *input_dbm, chidb_stmt stmt) {
 		return DBM_REGISTER_TYPE_MISMATCH;
 	}
 }
-int operation_ne(dbm *input_dbm, chidb_stmt stmt) {
-	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
-		switch (input_dbm->registers[stmt.P1].type) {
+int operation_ne(dbm *input_dbm, chidb_instruction inst) {
+	if (input_dbm->registers[inst.P1].type == input_dbm->registers[inst.P3].type) {
+		switch (input_dbm->registers[inst.P1].type) {
 			case INTEGER:
-				if (input_dbm->registers[stmt.P1].data.int_val != input_dbm->registers[stmt.P3].data.int_val) {
-					input_dbm->program_counter = stmt.P2;
+				if (input_dbm->registers[inst.P1].data.int_val != input_dbm->registers[inst.P3].data.int_val) {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case STRING:
-				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) != 0){
-					input_dbm->program_counter = stmt.P2;
+				if (strcmp(input_dbm->registers[inst.P1].data.str_val, input_dbm->registers[inst.P3].data.str_val) != 0){
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case BINARY:
-				if ((memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) != 0) || (input_dbm->registers[stmt.P1].data_len != input_dbm->registers[stmt.P3].data_len)) {
-					input_dbm->program_counter = stmt.P2;
+				if ((memcmp(input_dbm->registers[inst.P1].data.bin_val, input_dbm->registers[inst.P3].data.bin_val, input_dbm->registers[inst.P1].data_len) != 0) || (input_dbm->registers[inst.P1].data_len != input_dbm->registers[inst.P3].data_len)) {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case NL:
-				if (!(input_dbm->registers[stmt.P1].type == NL && input_dbm->registers[stmt.P3].type == NL))  {
-					input_dbm->program_counter = stmt.P2;
+				if (!(input_dbm->registers[inst.P1].type == NL && input_dbm->registers[inst.P3].type == NL))  {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
@@ -152,67 +152,33 @@ int operation_ne(dbm *input_dbm, chidb_stmt stmt) {
 		return DBM_REGISTER_TYPE_MISMATCH;
 	}
 }
-int operation_lt(dbm *input_dbm, chidb_stmt stmt) {
-	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
-		switch (input_dbm->registers[stmt.P1].type) {
+int operation_lt(dbm *input_dbm, chidb_instruction inst) {
+	if (input_dbm->registers[inst.P1].type == input_dbm->registers[inst.P3].type) {
+		switch (input_dbm->registers[inst.P1].type) {
 			case INTEGER:
-				if (input_dbm->registers[stmt.P1].data.int_val < input_dbm->registers[stmt.P3].data.int_val) {
-					input_dbm->program_counter = stmt.P2;
+				if (input_dbm->registers[inst.P1].data.int_val < input_dbm->registers[inst.P3].data.int_val) {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case STRING:
-				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) < 0){
-					input_dbm->program_counter = stmt.P2;
-				} else {
-					input_dbm->program_counter += 1;	
-				}
-				break;
-			case BINARY:
-				//TODO: UNEQUAL COMPARE LENGTHS CASE
-				if (memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) < 0) {
-					input_dbm->program_counter = stmt.P2;
-				} else {
-					input_dbm->program_counter += 1;	
-				}
-				break;
-			case NL:
-				input_dbm->program_counter = stmt.P2;
-				break;
-		}
-		return DBM_OK;
-	} else {
-		return DBM_REGISTER_TYPE_MISMATCH;
-	}
-}
-int operation_le(dbm *input_dbm, chidb_stmt stmt) {
-	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
-		switch (input_dbm->registers[stmt.P1].type) {
-			case INTEGER:
-				if (input_dbm->registers[stmt.P1].data.int_val <= input_dbm->registers[stmt.P3].data.int_val) {
-					input_dbm->program_counter = stmt.P2;
-				} else {
-					input_dbm->program_counter += 1;	
-				}
-				break;
-			case STRING:
-				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) <= 0){
-					input_dbm->program_counter = stmt.P2;
+				if (strcmp(input_dbm->registers[inst.P1].data.str_val, input_dbm->registers[inst.P3].data.str_val) < 0){
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case BINARY:
 				//TODO: UNEQUAL COMPARE LENGTHS CASE
-				if (memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) <= 0) {
-					input_dbm->program_counter = stmt.P2;
+				if (memcmp(input_dbm->registers[inst.P1].data.bin_val, input_dbm->registers[inst.P3].data.bin_val, input_dbm->registers[inst.P1].data_len) < 0) {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case NL:
-				input_dbm->program_counter = stmt.P2;
+				input_dbm->program_counter = inst.P2;
 				break;
 		}
 		return DBM_OK;
@@ -220,33 +186,33 @@ int operation_le(dbm *input_dbm, chidb_stmt stmt) {
 		return DBM_REGISTER_TYPE_MISMATCH;
 	}
 }
-int operation_gt(dbm *input_dbm, chidb_stmt stmt) {
-	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
-		switch (input_dbm->registers[stmt.P1].type) {
+int operation_le(dbm *input_dbm, chidb_instruction inst) {
+	if (input_dbm->registers[inst.P1].type == input_dbm->registers[inst.P3].type) {
+		switch (input_dbm->registers[inst.P1].type) {
 			case INTEGER:
-				if (input_dbm->registers[stmt.P1].data.int_val > input_dbm->registers[stmt.P3].data.int_val) {
-					input_dbm->program_counter = stmt.P2;
+				if (input_dbm->registers[inst.P1].data.int_val <= input_dbm->registers[inst.P3].data.int_val) {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case STRING:
-				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) > 0){
-					input_dbm->program_counter = stmt.P2;
+				if (strcmp(input_dbm->registers[inst.P1].data.str_val, input_dbm->registers[inst.P3].data.str_val) <= 0){
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case BINARY:
 				//TODO: UNEQUAL COMPARE LENGTHS CASE
-				if (memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) > 0) {
-					input_dbm->program_counter = stmt.P2;
+				if (memcmp(input_dbm->registers[inst.P1].data.bin_val, input_dbm->registers[inst.P3].data.bin_val, input_dbm->registers[inst.P1].data_len) <= 0) {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case NL:
-				input_dbm->program_counter = stmt.P2;
+				input_dbm->program_counter = inst.P2;
 				break;
 		}
 		return DBM_OK;
@@ -254,33 +220,67 @@ int operation_gt(dbm *input_dbm, chidb_stmt stmt) {
 		return DBM_REGISTER_TYPE_MISMATCH;
 	}
 }
-int operation_ge(dbm *input_dbm, chidb_stmt stmt) {
-	if (input_dbm->registers[stmt.P1].type == input_dbm->registers[stmt.P3].type) {
-		switch (input_dbm->registers[stmt.P1].type) {
+int operation_gt(dbm *input_dbm, chidb_instruction inst) {
+	if (input_dbm->registers[inst.P1].type == input_dbm->registers[inst.P3].type) {
+		switch (input_dbm->registers[inst.P1].type) {
 			case INTEGER:
-				if (input_dbm->registers[stmt.P1].data.int_val >= input_dbm->registers[stmt.P3].data.int_val) {
-					input_dbm->program_counter = stmt.P2;
+				if (input_dbm->registers[inst.P1].data.int_val > input_dbm->registers[inst.P3].data.int_val) {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case STRING:
-				if (strcmp(input_dbm->registers[stmt.P1].data.str_val, input_dbm->registers[stmt.P3].data.str_val) >= 0){
-					input_dbm->program_counter = stmt.P2;
+				if (strcmp(input_dbm->registers[inst.P1].data.str_val, input_dbm->registers[inst.P3].data.str_val) > 0){
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case BINARY:
 				//TODO: UNEQUAL COMPARE LENGTHS CASE
-				if (memcmp(input_dbm->registers[stmt.P1].data.bin_val, input_dbm->registers[stmt.P3].data.bin_val, input_dbm->registers[stmt.P1].data_len) >= 0) {
-					input_dbm->program_counter = stmt.P2;
+				if (memcmp(input_dbm->registers[inst.P1].data.bin_val, input_dbm->registers[inst.P3].data.bin_val, input_dbm->registers[inst.P1].data_len) > 0) {
+					input_dbm->program_counter = inst.P2;
 				} else {
 					input_dbm->program_counter += 1;	
 				}
 				break;
 			case NL:
-				input_dbm->program_counter = stmt.P2;
+				input_dbm->program_counter = inst.P2;
+				break;
+		}
+		return DBM_OK;
+	} else {
+		return DBM_REGISTER_TYPE_MISMATCH;
+	}
+}
+int operation_ge(dbm *input_dbm, chidb_instruction inst) {
+	if (input_dbm->registers[inst.P1].type == input_dbm->registers[inst.P3].type) {
+		switch (input_dbm->registers[inst.P1].type) {
+			case INTEGER:
+				if (input_dbm->registers[inst.P1].data.int_val >= input_dbm->registers[inst.P3].data.int_val) {
+					input_dbm->program_counter = inst.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case STRING:
+				if (strcmp(input_dbm->registers[inst.P1].data.str_val, input_dbm->registers[inst.P3].data.str_val) >= 0){
+					input_dbm->program_counter = inst.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case BINARY:
+				//TODO: UNEQUAL COMPARE LENGTHS CASE
+				if (memcmp(input_dbm->registers[inst.P1].data.bin_val, input_dbm->registers[inst.P3].data.bin_val, input_dbm->registers[inst.P1].data_len) >= 0) {
+					input_dbm->program_counter = inst.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
+				break;
+			case NL:
+				input_dbm->program_counter = inst.P2;
 				break;
 		}
 		return DBM_OK;
@@ -289,39 +289,39 @@ int operation_ge(dbm *input_dbm, chidb_stmt stmt) {
 	}
 }
 
-int operation_key(dbm *input_dbm, chidb_stmt stmt) {
-	input_dbm->registers[stmt.P2].type = INTEGER;
-	input_dbm->registers[stmt.P2].data.int_val = (uint32_t)input_dbm->cursors[stmt.P1].curr_cell->key;
-	input_dbm->registers[stmt.P2].touched = 1;
+int operation_key(dbm *input_dbm, chidb_instruction inst) {
+	input_dbm->registers[inst.P2].type = INTEGER;
+	input_dbm->registers[inst.P2].data.int_val = (uint32_t)input_dbm->cursors[inst.P1].curr_cell->key;
+	input_dbm->registers[inst.P2].touched = 1;
 	return DBM_OK;
 }
 
-int operation_integer(dbm *input_dbm, chidb_stmt stmt) {
-	input_dbm->registers[stmt.P2].type = INTEGER;
-	input_dbm->registers[stmt.P2].data.int_val = stmt.P1;
-	input_dbm->registers[stmt.P2].touched = 1;
+int operation_integer(dbm *input_dbm, chidb_instruction inst) {
+	input_dbm->registers[inst.P2].type = INTEGER;
+	input_dbm->registers[inst.P2].data.int_val = inst.P1;
+	input_dbm->registers[inst.P2].touched = 1;
 	return DBM_OK;
 }
 
-int operation_string(dbm *input_dbm, chidb_stmt stmt) {
-	input_dbm->registers[stmt.P2].type = STRING;
-	input_dbm->registers[stmt.P2].data.str_val = (char *)malloc(sizeof(char) * stmt.P1);
-	input_dbm->registers[stmt.P2].data_len = (size_t)stmt.P1;
-	input_dbm->registers[stmt.P2].touched = 1;
-	strcpy(input_dbm->registers[stmt.P2].data.str_val, (char *)stmt.P4);
+int operation_string(dbm *input_dbm, chidb_instruction inst) {
+	input_dbm->registers[inst.P2].type = STRING;
+	input_dbm->registers[inst.P2].data.str_val = (char *)malloc(sizeof(char) * inst.P1);
+	input_dbm->registers[inst.P2].data_len = (size_t)inst.P1;
+	input_dbm->registers[inst.P2].touched = 1;
+	strcpy(input_dbm->registers[inst.P2].data.str_val, (char *)inst.P4);
 	return DBM_OK;
 }
 
-int operation_rewind(dbm *input_dbm, chidb_stmt stmt) {
-	input_dbm->cursors[stmt.P1].curr_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
-	input_dbm->cursors[stmt.P1].next_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
-	input_dbm->cursors[stmt.P1].prev_cell = NULL;
-	input_dbm->cursors[stmt.P1].cell_num = 0; 
-	input_dbm->cursors[stmt.P1].touched = 1;
-	int retval = chidb_Btree_getCell(input_dbm->cursors[stmt.P1].node, 0, input_dbm->cursors[stmt.P1].curr_cell);	
-	int retval2 = chidb_Btree_getCell(input_dbm->cursors[stmt.P1].node, 1, input_dbm->cursors[stmt.P1].next_cell);
+int operation_rewind(dbm *input_dbm, chidb_instruction inst) {
+	input_dbm->cursors[inst.P1].curr_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
+	input_dbm->cursors[inst.P1].next_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
+	input_dbm->cursors[inst.P1].prev_cell = NULL;
+	input_dbm->cursors[inst.P1].cell_num = 0; 
+	input_dbm->cursors[inst.P1].touched = 1;
+	int retval = chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, 0, input_dbm->cursors[inst.P1].curr_cell);	
+	int retval2 = chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, 1, input_dbm->cursors[inst.P1].next_cell);
 	if (retval2 != CHIDB_OK) {
-		input_dbm->cursors[stmt.P1].next_cell = NULL;
+		input_dbm->cursors[inst.P1].next_cell = NULL;
 	}
 	if (retval == CHIDB_OK) {
 		return DBM_OK;
@@ -330,27 +330,41 @@ int operation_rewind(dbm *input_dbm, chidb_stmt stmt) {
 	}
 }
 
-int operation_next(dbm *input_dbm, chidb_stmt stmt) {
-	/*
-	* IMPLEMENT LATER
-	*/
+int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
 	return DBM_OK;
 }
 
+int operation_next(dbm *input_dbm, chidb_instruction inst) {
+	return DBM_OK;
+}
+
+int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
+	return DBM_OK;
+}
+
+int operation_column(dbm *input_dbm, chidb_instruction inst) {
+	return DBM_OK;
+}
+
+int operation_result_row(dbm *input_dbm, chidb_instruction inst) {
+	return DBM_OK;
+}
+
+
 //TODO: BETTER ERROR HANDLING
-int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
-	switch (stmt.instruction) {
+int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
+	switch (inst.instruction) {
 		case DBM_OPENWRITE:
 		case DBM_OPENREAD: {
-			if (stmt.instruction == DBM_OPENWRITE) {
+			if (inst.instruction == DBM_OPENWRITE) {
 				input_dbm->readwritestate = DBM_WRITE_STATE;
 			} else {
 				input_dbm->readwritestate = DBM_READ_STATE;
 			}
-			uint32_t page_num = (input_dbm->registers[stmt.P2]).data.int_val;
-			input_dbm->cursors[stmt.P1].touched = 1;
-			input_dbm->cursors[stmt.P1].node = (BTreeNode *)calloc(1, sizeof(BTreeNode));
-			if (chidb_Btree_getNodeByPage(input_dbm->db->bt, page_num, &(input_dbm->cursors[stmt.P1].node)) == CHIDB_OK) {
+			uint32_t page_num = (input_dbm->registers[inst.P2]).data.int_val;
+			input_dbm->cursors[inst.P1].touched = 1;
+			input_dbm->cursors[inst.P1].node = (BTreeNode *)calloc(1, sizeof(BTreeNode));
+			if (chidb_Btree_getNodeByPage(input_dbm->db->bt, page_num, &(input_dbm->cursors[inst.P1].node)) == CHIDB_OK) {
 				input_dbm->tick_result = DBM_OK;
 				input_dbm->program_counter += 1;
 				return DBM_OK;
@@ -360,7 +374,7 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			}
 		}
 		case DBM_CLOSE: {
-			int retval = operation_cursor_close(input_dbm, stmt.P1);
+			int retval = operation_cursor_close(input_dbm, inst.P1);
 			if (retval == DBM_OK) {
 				input_dbm->program_counter += 1;
 				input_dbm->tick_result = DBM_OK;
@@ -372,17 +386,25 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_REWIND:
-			if (operation_rewind(input_dbm, stmt) == DBM_OK) {
+			if (operation_rewind(input_dbm, inst) == DBM_OK) {
 				input_dbm->program_counter += 1;
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
 			} else {
-				input_dbm->program_counter = stmt.P2;
+				input_dbm->program_counter = inst.P2;
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
 			}
 			break;
 		case DBM_NEXT:
+			int retval = operation_next(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
 		case DBM_PREV:
 			break;
@@ -393,9 +415,17 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 		case DBM_SEEKGE:
 			break;
 		case DBM_COLUMN:
+			int retval = operation_column(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
 		case DBM_KEY: {
-			int retval = operation_key(input_dbm, stmt);
+			int retval = operation_key(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
@@ -406,7 +436,7 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_INTEGER: {
-			int retval = operation_integer(input_dbm, stmt);
+			int retval = operation_integer(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
@@ -417,7 +447,7 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_STRING: {
-			int retval = operation_string(input_dbm, stmt);
+			int retval = operation_string(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
@@ -428,18 +458,42 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_NULL:
-			input_dbm->registers[stmt.P2].type = NL;
-			input_dbm->registers[stmt.P2].touched = 1;
+			input_dbm->registers[inst.P2].type = NL;
+			input_dbm->registers[inst.P2].touched = 1;
 			input_dbm->tick_result = DBM_OK;
 			return DBM_OK;
 		case DBM_RESULTROW:
+			int retval = operation_result_row(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
 		case DBM_MAKERECORD:
+			int retval = operation_db_record(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
 		case DBM_INSERT:
+			int retval = operation_insert_record(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
 		case DBM_EQ: {
-			int retval = operation_eq(input_dbm, stmt);
+			int retval = operation_eq(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
@@ -450,7 +504,7 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_NE: {
-			int retval = operation_ne(input_dbm, stmt);
+			int retval = operation_ne(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
@@ -461,7 +515,7 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_LT: {
-			int retval = operation_lt(input_dbm, stmt);
+			int retval = operation_lt(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
@@ -472,7 +526,7 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_LE: {
-			int retval = operation_le(input_dbm, stmt);
+			int retval = operation_le(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
@@ -483,7 +537,7 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_GT: {
-			int retval = operation_gt(input_dbm, stmt);
+			int retval = operation_gt(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
@@ -494,7 +548,7 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_GE: {
-			int retval = operation_ge(input_dbm, stmt);
+			int retval = operation_ge(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
@@ -521,10 +575,10 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 		case DBM_SCOPY:
 			break;
 		case DBM_HALT:
-			if (stmt.P1 == 0) {
+			if (inst.P1 == 0) {
 				input_dbm->tick_result = DBM_OK;
 			} else {
-				input_dbm->tick_result = stmt.P4;
+				input_dbm->tick_result = inst.P4;
 			}
 			return DBM_HALT_STATE;
 	}

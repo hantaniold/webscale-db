@@ -6,7 +6,6 @@
 #include "parser.h"
 #include "record.h"
 
-
 #define DBM_MAX_REGISTERS (256)
 #define DBM_MAX_CURSORS (256)
 
@@ -60,7 +59,7 @@
 #define DBM_SCOPY (30)
 #define DBM_HALT (31)
 
-enum dbm_register_type {INTEGER, STRING, BINARY, NL};
+enum dbm_register_type {INTEGER, STRING, BINARY, NL, RECORD};
 
 typedef enum dbm_register_type dbm_register_type;
 
@@ -72,6 +71,7 @@ struct dbm_register {
 		uint32_t int_val;
 		char *str_val;
 		uint8_t *bin_val;
+		DBRecord *record_val;
 	} data;
 };
 
