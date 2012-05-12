@@ -330,7 +330,34 @@ int operation_rewind(dbm *input_dbm, chidb_instruction inst) {
 	}
 }
 
+//DBM_MAKERECORD
 int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
+	input_dbm->registers[inst.P2].type = RECORD;
+	input_dbm->registers[inst.P2].touched = 1;
+	input_dbm->registers[inst.P2].data.record_val = (DBRecord *)calloc(1, sizeof(DBRecord));
+	
+	DBRecordBuffer *dbrb = (DBRecordBuffer *)calloc(1, sizeof(DBRecordBuffer));
+	
+	chidb_DBRecord_create_empty(dbrb, inst.P2);
+	
+	for (uint32_t i = inst.P1; i < inst.P1 + inst.P2; ++i) {
+		switch (input_dbm->registers[i].type) {
+			case INTEGER:
+				chidb_DBRecord_appendInt32(dbrb, input_dbm->registers[i].data.int_val);
+			break;
+			case STRING:
+				chidb_DBRecord_appendString(dbrb,  input_dbm->registers[i].data.str_val);
+			break;
+			case NL:
+				chidb_DBRecord_appendNull(dbrb);
+			break;
+		}
+	}
+	
+	chidb_DBRecord_finalize(dbrb, &(input_dbm->registers[inst.P2].data.record_val));
+	
+	free(dbrb);
+	input_dbm->program_counter += 1;	
 	return DBM_OK;
 }
 
@@ -338,6 +365,7 @@ int operation_next(dbm *input_dbm, chidb_instruction inst) {
 	return DBM_OK;
 }
 
+//DBM_INSERT
 int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
 	return DBM_OK;
 }
