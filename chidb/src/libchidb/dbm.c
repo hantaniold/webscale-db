@@ -60,6 +60,9 @@ int reset_dbm(dbm *input_dbm) {
 			if (myreg.type == BINARY) {
 				free(myreg.data.bin_val);
 			}
+			if (myreg.type == RECORD) {
+				chidb_DBRecord_destroy(myreg.data.record_val);
+			}
 		}
 		myreg.touched = 0;
 		myreg.type = NL;
@@ -109,6 +112,8 @@ int operation_eq(dbm *input_dbm, chidb_instruction inst) {
 					input_dbm->program_counter += 1;	
 				}
 				break;
+			case RECORD:
+				break;
 		}
 		return DBM_OK;
 	} else {
@@ -146,6 +151,8 @@ int operation_ne(dbm *input_dbm, chidb_instruction inst) {
 					input_dbm->program_counter += 1;	
 				}
 				break;
+			case RECORD:
+				break;
 		}
 		return DBM_OK;
 	} else {
@@ -179,6 +186,8 @@ int operation_lt(dbm *input_dbm, chidb_instruction inst) {
 				break;
 			case NL:
 				input_dbm->program_counter = inst.P2;
+				break;
+			case RECORD:
 				break;
 		}
 		return DBM_OK;
@@ -214,6 +223,8 @@ int operation_le(dbm *input_dbm, chidb_instruction inst) {
 			case NL:
 				input_dbm->program_counter = inst.P2;
 				break;
+			case RECORD:
+				break;
 		}
 		return DBM_OK;
 	} else {
@@ -248,6 +259,8 @@ int operation_gt(dbm *input_dbm, chidb_instruction inst) {
 			case NL:
 				input_dbm->program_counter = inst.P2;
 				break;
+			case RECORD:
+				break;
 		}
 		return DBM_OK;
 	} else {
@@ -281,6 +294,8 @@ int operation_ge(dbm *input_dbm, chidb_instruction inst) {
 				break;
 			case NL:
 				input_dbm->program_counter = inst.P2;
+				break;
+			case RECORD:
 				break;
 		}
 		return DBM_OK;
@@ -351,6 +366,10 @@ int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
 			case NL:
 				chidb_DBRecord_appendNull(dbrb);
 			break;
+			case BINARY:
+			break;
+			case RECORD:
+			break;
 		}
 	}
 	
@@ -362,11 +381,14 @@ int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_next(dbm *input_dbm, chidb_instruction inst) {
+	
 	return DBM_OK;
 }
 
 //DBM_INSERT
 int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
+//TODO: ERROR HANDLING
+	chidb_Btree_insertInTable(input_dbm->db->bt, (npage_t)(*(input_dbm->db->bt->schema_table))->root_page, (key_t)input_dbm->registers[inst.P3].data.int_val, input_dbm->registers[inst.P2].data.record_val->data, (uint16_t)input_dbm->registers[inst.P2].data.record_val->data_len);
 	return DBM_OK;
 }
 
@@ -378,8 +400,6 @@ int operation_result_row(dbm *input_dbm, chidb_instruction inst) {
 	return DBM_OK;
 }
 
-
-//TODO: BETTER ERROR HANDLING
 int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 	switch (inst.instruction) {
 		case DBM_OPENWRITE:
@@ -413,7 +433,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			}
 			break;
 		}
-		case DBM_REWIND:
+		case DBM_REWIND: {
 			if (operation_rewind(input_dbm, inst) == DBM_OK) {
 				input_dbm->program_counter += 1;
 				input_dbm->tick_result = DBM_OK;
@@ -424,7 +444,8 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_OK;
 			}
 			break;
-		case DBM_NEXT:
+		}
+		case DBM_NEXT: {
 			int retval = operation_next(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
@@ -434,6 +455,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
+		}
 		case DBM_PREV:
 			break;
 		case DBM_SEEK:
@@ -442,7 +464,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			break;
 		case DBM_SEEKGE:
 			break;
-		case DBM_COLUMN:
+		case DBM_COLUMN: {
 			int retval = operation_column(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
@@ -452,6 +474,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
+		}
 		case DBM_KEY: {
 			int retval = operation_key(input_dbm, inst);
 			if (retval == DBM_OK) {
@@ -485,12 +508,13 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			}
 			break;
 		}
-		case DBM_NULL:
+		case DBM_NULL: {
 			input_dbm->registers[inst.P2].type = NL;
 			input_dbm->registers[inst.P2].touched = 1;
 			input_dbm->tick_result = DBM_OK;
 			return DBM_OK;
-		case DBM_RESULTROW:
+		}
+		case DBM_RESULTROW: {
 			int retval = operation_result_row(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
@@ -500,7 +524,8 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
-		case DBM_MAKERECORD:
+		}
+		case DBM_MAKERECORD: {
 			int retval = operation_db_record(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
@@ -510,7 +535,8 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
-		case DBM_INSERT:
+		}
+		case DBM_INSERT: {
 			int retval = operation_insert_record(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
@@ -520,6 +546,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
+		}
 		case DBM_EQ: {
 			int retval = operation_eq(input_dbm, inst);
 			if (retval == DBM_OK) {

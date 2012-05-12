@@ -126,6 +126,6 @@ int reset_dbm(dbm *);
 //PRIVATE - SHOULD NOT BE CALLED BY ANYTHING BUT THE DBM ITSELF
 //THIS PROCESSES ONE INSTRUCTION IN THE DBM
 //INCREMENTS THE PROGRAM COUNTER BY ONE IF NO JUMP OCCURS
-int tick_dbm(dbm *input_dbm, chidb_stmt stmt);
+int tick_dbm(dbm *input_dbm, chidb_instruction stmt);
 
 
