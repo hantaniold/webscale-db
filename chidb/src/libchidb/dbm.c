@@ -338,28 +338,34 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			input_dbm->cursors[stmt.P1].touched = 1;
 			input_dbm->cursors[stmt.P1].node = (BTreeNode *)calloc(1, sizeof(BTreeNode));
 			if (chidb_Btree_getNodeByPage(input_dbm->db->bt, page_num, &(input_dbm->cursors[stmt.P1].node)) == CHIDB_OK) {
+				input_dbm->tick_result = DBM_OK;
 				input_dbm->program_counter += 1;
 				return DBM_OK;
 			} else {
-				return DBM_OPENRW_ERROR;
+				input_dbm->tick_result = DBM_OPENRW_ERROR;
+				return DBM_HALT_STATE;
 			}
 		}
 		case DBM_CLOSE: {
 			int retval = operation_cursor_close(input_dbm, stmt.P1);
 			if (retval == DBM_OK) {
 				input_dbm->program_counter += 1;
+				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
 			} else {
-				return retval;
+				input_dbm->tick_result = DBM_OPENRW_ERROR;
+				return DBM_HALT_STATE;
 			}
 			break;
 		}
 		case DBM_REWIND:
 			if (operation_rewind(input_dbm, stmt) == DBM_OK) {
 				input_dbm->program_counter += 1;
+				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
 			} else {
 				input_dbm->program_counter = stmt.P2;
+				input_dbm->tick_result = DBM_OK;
 				return DBM_OK;
 			}
 			break;
@@ -375,15 +381,39 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		case DBM_COLUMN:
 			break;
-		case DBM_KEY:
-			return operation_key(input_dbm, stmt);
+		case DBM_KEY: {
+			int retval = operation_key(input_dbm, stmt);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_INTEGER:
-			return operation_integer(input_dbm, stmt);
+		}
+		case DBM_INTEGER: {
+			int retval = operation_integer(input_dbm, stmt);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_STRING:
-			return operation_string(input_dbm, stmt);
+		}
+		case DBM_STRING: {
+			int retval = operation_string(input_dbm, stmt);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
+		}
 		case DBM_NULL:
 			break;
 		case DBM_RESULTROW:
@@ -392,24 +422,72 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		case DBM_INSERT:
 			break;
-		case DBM_EQ:
-			return operation_eq(input_dbm, stmt);
+		case DBM_EQ: {
+			int retval = operation_eq(input_dbm, stmt);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_NE:
-			return operation_ne(input_dbm, stmt);
+		}
+		case DBM_NE: {
+			int retval = operation_ne(input_dbm, stmt);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_LT:
-			return operation_lt(input_dbm, stmt);
+		}
+		case DBM_LT: {
+			int retval = operation_lt(input_dbm, stmt);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_LE:
-			return operation_le(input_dbm, stmt);
+		}
+		case DBM_LE: {
+			int retval = operation_le(input_dbm, stmt);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_GT:
-			return operation_gt(input_dbm, stmt);
+		}
+		case DBM_GT: {
+			int retval = operation_gt(input_dbm, stmt);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_GE:
-			return operation_ge(input_dbm, stmt);
+		}
+		case DBM_GE: {
+			int retval = operation_ge(input_dbm, stmt);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
+		}
 		case DBM_IDXGT:
 			break;
 		case DBM_IDXLT:
