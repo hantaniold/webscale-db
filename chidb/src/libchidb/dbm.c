@@ -510,6 +510,12 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 		case DBM_SCOPY:
 			break;
 		case DBM_HALT:
+			if (stmt.P1 == 0) {
+				input_dbm->tick_result = DBM_OK;
+			} else {
+				input_dbm->tick_result = stmt.P4;
+			}
+			return DBM_HALT_STATE;
 			break; 
 	}
 	return DBM_INVALID_INSTRUCTION;
