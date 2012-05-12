@@ -470,6 +470,9 @@ int chidb_step(chidb_stmt *stmt)
 
 int chidb_finalize(chidb_stmt *stmt)
 {
+    free(stmt->ins);
+    free(stmt->sql);
+    free(stmt);
 	return CHIDB_OK;
 }
 
