@@ -103,7 +103,11 @@ int operation_eq(dbm *input_dbm, chidb_stmt stmt) {
 				} 
 				break;
 			case NL:
-				input_dbm->program_counter = stmt.P2;
+				if (input_dbm->registers[stmt.P1].type == NL && input_dbm->registers[stmt.P3].type == NL)  {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
 				break;
 		}
 		return DBM_OK;
@@ -136,7 +140,11 @@ int operation_ne(dbm *input_dbm, chidb_stmt stmt) {
 				}
 				break;
 			case NL:
-				input_dbm->program_counter = stmt.P2;
+				if (!(input_dbm->registers[stmt.P1].type == NL && input_dbm->registers[stmt.P3].type == NL))  {
+					input_dbm->program_counter = stmt.P2;
+				} else {
+					input_dbm->program_counter += 1;	
+				}
 				break;
 		}
 		return DBM_OK;
@@ -420,7 +428,10 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 			break;
 		}
 		case DBM_NULL:
-			break;
+			input_dbm->registers[stmt.P2].type = NL;
+			input_dbm->registers[stmt.P2].touched = 1;
+			input_dbm->tick_result = DBM_OK;
+			return DBM_OK;
 		case DBM_RESULTROW:
 			break;
 		case DBM_MAKERECORD:
@@ -516,7 +527,6 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 				input_dbm->tick_result = stmt.P4;
 			}
 			return DBM_HALT_STATE;
-			break; 
 	}
 	return DBM_INVALID_INSTRUCTION;
 } //END OF tick_dbm
