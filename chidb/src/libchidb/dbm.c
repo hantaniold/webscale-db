@@ -334,6 +334,11 @@ int tick_dbm(dbm *input_dbm, chidb_stmt stmt) {
 	switch (stmt.instruction) {
 		case DBM_OPENWRITE:
 		case DBM_OPENREAD: {
+			if (stmt.instruction == DBM_OPENWRITE) {
+				input_dbm->readwritestate = DBM_WRITE_STATE;
+			} else {
+				input_dbm->readwritestate = DBM_READ_STATE;
+			}
 			uint32_t page_num = (input_dbm->registers[stmt.P2]).data.int_val;
 			input_dbm->cursors[stmt.P1].touched = 1;
 			input_dbm->cursors[stmt.P1].node = (BTreeNode *)calloc(1, sizeof(BTreeNode));
