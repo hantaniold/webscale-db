@@ -3,6 +3,7 @@
 */
 #include "chidb.h"
 #include "btree.h"
+#include "parser.h"
 #include "record.h"
 
 #define DBM_MAX_REGISTERS (256)
@@ -113,6 +114,7 @@ struct chidb_stmt {
     int num_instructions;
     DBRecord *record;
     chidb *db;
+    SQLStatement *sql;
 };
 
 //THIS WILL CREATE A NEW DBM STRUCT

@@ -205,6 +205,13 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
     }
 
     // Compile the SQL statement into valid chidb statements
+    *stmt = malloc(sizeof(chidb_stmt));
+    (*stmt)->ins = NULL;
+    (*stmt)->num_instructions = 0;
+    (*stmt)->record = NULL;
+    (*stmt)->db = db;
+    (*stmt)->sql = sql_stmt;
+
     switch(sql_stmt->type) {
         case STMT_SELECT:
         {
@@ -212,25 +219,25 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             int rmax = 0;
 
             // Store the page number
-            *stmt = malloc(sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_INTEGER;    // Integer type
-            (*stmt)[numlines].P1 = root_page;               // Store the root page
-            (*stmt)[numlines].P2 = 0;                       // into register 0
+            (*stmt)->ins = malloc(sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_INTEGER;    // Integer type
+            (*stmt)->ins[numlines].P1 = root_page;               // Store the root page
+            (*stmt)->ins[numlines].P2 = 0;                       // into register 0
             numlines++;
 
             // Open the B-Tree
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_OPENREAD;  // Open a B-Tree
-            (*stmt)[numlines].P1 = 0;                       // with cursor 0
-            (*stmt)[numlines].P2 = 0;                       // on the page in register 0
-            (*stmt)[numlines].P3 = ncols;                   // having ncols columns
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_OPENREAD;  // Open a B-Tree
+            (*stmt)->ins[numlines].P1 = 0;                       // with cursor 0
+            (*stmt)->ins[numlines].P2 = 0;                       // on the page in register 0
+            (*stmt)->ins[numlines].P3 = ncols;                   // having ncols columns
             numlines++;
 
             // Rewind the B-Tree
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_REWIND;    // Rewind to the beginning of the B-Tree
-            (*stmt)[numlines].P1 = 0;                       // using cursor 0
-            (*stmt)[numlines].P2 = -1;                      // and if the table is empty, jump to CLOSE
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_REWIND;     // Rewind to the beginning of the B-Tree
+            (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
+            (*stmt)->ins[numlines].P2 = -1;                      // and if the table is empty, jump to CLOSE
             numlines++;
 
             // Select columns (0, 1, or 2) from WHERE clause
@@ -243,82 +250,82 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                         break;
                     }
                 }
-                *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-                (*stmt)[numlines].instruction = DBM_COLUMN;     // Get a column value
-                (*stmt)[numlines].P1 = 0;                       // using cursor 0
-                (*stmt)[numlines].P2 = colnum;                  // from column number colnum
-                (*stmt)[numlines].P3 = ++rmax;                  // into a new register
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                (*stmt)->ins[numlines].instruction = DBM_COLUMN;     // Get a column value
+                (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
+                (*stmt)->ins[numlines].P2 = colnum;                  // from column number colnum
+                (*stmt)->ins[numlines].P3 = ++rmax;                  // into a new register
                 numlines++;
                 
                 // Check if the operation is unary or binary
                 if(sql_stmt->query.select.where_conds[0].op != OP_ISNULL && sql_stmt->query.select.where_conds[0].op != OP_ISNOTNULL) {
                     // Store any literals if the operation is binary
                     if(sql_stmt->query.select.where_conds[0].op2Type == OP2_INT) {
-                        *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-                        (*stmt)[numlines].instruction = DBM_INTEGER;                                // Integer type
-                        (*stmt)[numlines].P1 = sql_stmt->query.select.where_conds[0].op2.integer;   // Store the integer
-                        (*stmt)[numlines].P2 = 1;                                                   // into register 1
+                        (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                        (*stmt)->ins[numlines].instruction = DBM_INTEGER;                                // Integer type
+                        (*stmt)->ins[numlines].P1 = sql_stmt->query.select.where_conds[0].op2.integer;   // Store the integer
+                        (*stmt)->ins[numlines].P2 = 1;                                                   // into register 1
                         numlines++;
                         rmax = 1;
                     } else if(sql_stmt->query.select.where_conds[0].op2Type == OP2_STR) {
-                        *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-                        (*stmt)[numlines].instruction = DBM_STRING;                                             // String type
-                        (*stmt)[numlines].P1 = strlen(sql_stmt->query.select.where_conds[0].op2.string) + 1;    // Store the length
-                        (*stmt)[numlines].P2 = 1;                                                               // into register 1
-                        (*stmt)[numlines].P4 = (uint32_t)(sql_stmt->query.select.where_conds[0].op2.string);    // and keep a ptr
+                        (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                        (*stmt)->ins[numlines].instruction = DBM_STRING;                                             // String type
+                        (*stmt)->ins[numlines].P1 = strlen(sql_stmt->query.select.where_conds[0].op2.string) + 1;    // Store the length
+                        (*stmt)->ins[numlines].P2 = 1;                                                               // into register 1
+                        (*stmt)->ins[numlines].P4 = (uint32_t)(sql_stmt->query.select.where_conds[0].op2.string);    // and keep a ptr
                         numlines++;
                         rmax = 1;
                     } else if(sql_stmt->query.select.where_conds[0].op2Type == OP2_COL) {
                         // Store the second column, if there is one
                         for(int j = 0; j < ncols; j++) {
-                            if(!strcpy(sql_stmt->query.select.where_conds[0].op2.col.name, create_table_stmt->query.createTable.cols[j].name)) {
+                            if(!strcmp(sql_stmt->query.select.where_conds[0].op2.col.name, create_table_stmt->query.createTable.cols[j].name)) {
                                 colnum = j;
                                 break;
                             }
                         }
-                        *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-                        (*stmt)[numlines].instruction = DBM_COLUMN; // Get a column value
-                        (*stmt)[numlines].P1 = 0;                   // using cursor 0
-                        (*stmt)[numlines].P2 = colnum;              // into column number colnum
-                        (*stmt)[numlines].P3 = ++rmax;              // into a new register
+                        (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                        (*stmt)->ins[numlines].instruction = DBM_COLUMN; // Get a column value
+                        (*stmt)->ins[numlines].P1 = 0;                   // using cursor 0
+                        (*stmt)->ins[numlines].P2 = colnum;              // into column number colnum
+                        (*stmt)->ins[numlines].P3 = ++rmax;              // into a new register
                         numlines++;
                     }
                 } else {
                     // Store a null if the operation is unary
-                    *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-                    (*stmt)[numlines].instruction = DBM_NULL;    // Store a null type
-                    (*stmt)[numlines].P2 = ++rmax;               // into a new register
+                    (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                    (*stmt)->ins[numlines].instruction = DBM_NULL;    // Store a null type
+                    (*stmt)->ins[numlines].P2 = ++rmax;               // into a new register
                     numlines++;
                 }
 
                 // Store the conditional jump instruction
-                *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
                 switch(sql_stmt->query.select.where_conds[0].op2Type) {
                     case OP_EQ:
                     case OP_ISNULL:
-                        (*stmt)[numlines].instruction = DBM_NE;
+                        (*stmt)->ins[numlines].instruction = DBM_NE;
                         break;
                     case OP_NE:
                     case OP_ISNOTNULL:
-                        (*stmt)[numlines].instruction = DBM_EQ;
+                        (*stmt)->ins[numlines].instruction = DBM_EQ;
                         break; 
                     case OP_LT:
-                        (*stmt)[numlines].instruction = DBM_GE;
+                        (*stmt)->ins[numlines].instruction = DBM_GE;
                         break; 
                     case OP_GT:
-                        (*stmt)[numlines].instruction = DBM_LE;
+                        (*stmt)->ins[numlines].instruction = DBM_LE;
                         break;
                     case OP_LTE:
-                        (*stmt)[numlines].instruction = DBM_GT;
+                        (*stmt)->ins[numlines].instruction = DBM_GT;
                         break; 
                     case OP_GTE:
-                        (*stmt)[numlines].instruction = DBM_LT;
+                        (*stmt)->ins[numlines].instruction = DBM_LT;
                         break;
                 }
-                (*stmt)[numlines].P1 = rmax - 2;                // Get the register of the first operand
-                (*stmt)[numlines].P2 = sql_stmt->query.select.select_ncols + numlines + 1;
+                (*stmt)->ins[numlines].P1 = rmax - 2;                // Get the register of the first operand
+                (*stmt)->ins[numlines].P2 = sql_stmt->query.select.select_ncols + numlines + 1;
                                                                 // Get the jump address
-                (*stmt)[numlines].P3 = rmax - 1;                // Get the register of the second operand
+                (*stmt)->ins[numlines].P3 = rmax - 1;                // Get the register of the second operand
                 numlines++;
             }
 
@@ -327,49 +334,51 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 // Get the column number
                 int colnum;
                 for(int j = 0; j < ncols; j++) {
-                    if(!strcpy(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[j].name)) {
+                    if(!strcmp(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[j].name)) {
                         colnum = j;
                         break;
                     }
                 }
 
                 // Store the column value
-                *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-                (*stmt)[numlines].instruction = DBM_COLUMN;    // Get a column value
-                (*stmt)[numlines].P1 = 0;                       // using cursor 0
-                (*stmt)[numlines].P2 = colnum;                  // from column number colnum
-                (*stmt)[numlines].P3 = ++rmax;                  // into a new register
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                (*stmt)->ins[numlines].instruction = DBM_COLUMN;     // Get a column value
+                (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
+                (*stmt)->ins[numlines].P2 = colnum;                  // from column number colnum
+                (*stmt)->ins[numlines].P3 = ++rmax;                  // into a new register
                 numlines++;
             }
 
             // Get Result Row
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_RESULTROW;                      // Get a result row
-            (*stmt)[numlines].P1 = rmax - sql_stmt->query.select.select_ncols;  // Identify start register
-            (*stmt)[numlines].P2 = sql_stmt->query.select.select_ncols;         // Identify the number of columns in the result
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_RESULTROW;                      // Get a result row
+            (*stmt)->ins[numlines].P1 = rmax - sql_stmt->query.select.select_ncols;  // Identify start register
+            (*stmt)->ins[numlines].P2 = sql_stmt->query.select.select_ncols;         // Identify the number of columns in the result
             numlines++;
 
             // Set up a jump for multiple result rows (NEXT)
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_NEXT;       // Continue to next result row
-            (*stmt)[numlines].P1 = 0;                       // with cursor 0
-            (*stmt)[numlines].P2 = 3;                       // return to instruction 3
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_NEXT;       // Continue to next result row
+            (*stmt)->ins[numlines].P1 = 0;                       // with cursor 0
+            (*stmt)->ins[numlines].P2 = 3;                       // return to instruction 3
             numlines++;
 
             // Close the cursor
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_CLOSE;      // Close the cursor
-            (*stmt)[numlines].P1 = 0;                       // number 0
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_CLOSE;      // Close the cursor
+            (*stmt)->ins[numlines].P1 = 0;                       // number 0
 
             // Set the jump for REWIND (always indexed at 2)
-            (*stmt)[2].P2 = numlines;
+            (*stmt)->ins[2].P2 = numlines;
             numlines++;
 
             // Halt execution
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_HALT;       // Halt execution
-            (*stmt)[numlines].P1 = 0;                       // with return value 0
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_HALT;       // Halt execution
+            (*stmt)->ins[numlines].P1 = 0;                       // with return value 0
             numlines++;
+
+            (*stmt)->num_instructions = numlines;
 
             break;
         }
@@ -379,70 +388,72 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             int rmax = 0;
 
             // Store the page number
-            *stmt = malloc(sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_INTEGER;    // Integer type
-            (*stmt)[numlines].P1 = root_page;               // Store the root page
-            (*stmt)[numlines].P2 = 0;                       // into register 0
+            (*stmt)->ins = malloc(sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_INTEGER;    // Integer type
+            (*stmt)->ins[numlines].P1 = root_page;               // Store the root page
+            (*stmt)->ins[numlines].P2 = 0;                       // into register 0
             numlines++;
 
             // Open the B-Tree
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_OPENWRITE;  // Open a B-Tree
-            (*stmt)[numlines].P1 = 0;                       // with cursor 0
-            (*stmt)[numlines].P2 = 0;                       // on the page in register 0
-            (*stmt)[numlines].P3 = ncols;                   // having ncols columns
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_OPENWRITE;  // Open a B-Tree
+            (*stmt)->ins[numlines].P1 = 0;                       // with cursor 0
+            (*stmt)->ins[numlines].P2 = 0;                       // on the page in register 0
+            (*stmt)->ins[numlines].P3 = ncols;                   // having ncols columns
             numlines++;
 
             // Store the new record contents into registers
             for(int i = 0; i < sql_stmt->query.insert.nvalues; i++) {
-                *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
                 switch(sql_stmt->query.insert.values[i].type) {
                     case INS_INT:
-                        (*stmt)[numlines].instruction = DBM_INTEGER;    // Store an integer value
-                        (*stmt)[numlines].P1 = sql_stmt->query.insert.values[i].val.integer;
-                        (*stmt)[numlines].P2 = ++rmax;
+                        (*stmt)->ins[numlines].instruction = DBM_INTEGER;    // Store an integer value
+                        (*stmt)->ins[numlines].P1 = sql_stmt->query.insert.values[i].val.integer;
+                        (*stmt)->ins[numlines].P2 = ++rmax;
                         break;
                     case INS_STR:
-                        (*stmt)[numlines].instruction = DBM_STRING;     // Store a string pointer
-                        (*stmt)[numlines].P1 = strlen(sql_stmt->query.insert.values[i].val.string) + 1;
-                        (*stmt)[numlines].P2 = ++rmax;
-                        (*stmt)[numlines].P4 = sql_stmt->query.insert.values[i].val.string;
+                        (*stmt)->ins[numlines].instruction = DBM_STRING;     // Store a string pointer
+                        (*stmt)->ins[numlines].P1 = strlen(sql_stmt->query.insert.values[i].val.string) + 1;
+                        (*stmt)->ins[numlines].P2 = ++rmax;
+                        (*stmt)->ins[numlines].P4 = sql_stmt->query.insert.values[i].val.string;
                         break;
                     case INS_NULL:
-                        (*stmt)[numlines].instruction = DBM_NULL;       // Store a null value
-                        (*stmt)[numlines].P2 = ++rmax;
+                        (*stmt)->ins[numlines].instruction = DBM_NULL;       // Store a null value
+                        (*stmt)->ins[numlines].P2 = ++rmax;
                         break;
                 }
                 numlines++;
             }
             
             // Make a new record
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_MAKERECORD;             // Create a new record
-            (*stmt)[numlines].P1 = 1;                                   // beginning with register 1
-            (*stmt)[numlines].P2 = rmax - 1;                            // with this many columns
-            (*stmt)[numlines].P3 = ++rmax;                              // and store the record in a new register
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_MAKERECORD;             // Create a new record
+            (*stmt)->ins[numlines].P1 = 1;                                   // beginning with register 1
+            (*stmt)->ins[numlines].P2 = rmax - 1;                            // with this many columns
+            (*stmt)->ins[numlines].P3 = ++rmax;                              // and store the record in a new register
             numlines++;
             
             // Insert the new record
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_INSERT;                 // Insert the new record
-            (*stmt)[numlines].P1 = 0;                                   // using cursor 0
-            (*stmt)[numlines].P2 = rmax;                                // with the record in register rmax
-            (*stmt)[numlines].P3 = create_table_stmt->query.createTable.pk; // with primary key in column pk in this register
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_INSERT;                 // Insert the new record
+            (*stmt)->ins[numlines].P1 = 0;                                   // using cursor 0
+            (*stmt)->ins[numlines].P2 = rmax;                                // with the record in register rmax
+            (*stmt)->ins[numlines].P3 = create_table_stmt->query.createTable.pk; // with primary key in column pk in this register
             numlines++;
 
             // Close the cursor
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_CLOSE;      // Close the cursor
-            (*stmt)[numlines].P1 = 0;                       // number 0
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_CLOSE;      // Close the cursor
+            (*stmt)->ins[numlines].P1 = 0;                       // number 0
             numlines++;
 
             // Halt execution
-            *stmt = realloc(*stmt, (numlines + 1) * sizeof(chidb_stmt));
-            (*stmt)[numlines].instruction = DBM_HALT;       // Halt execution
-            (*stmt)[numlines].P1 = 0;                       // with return value 0
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_HALT;       // Halt execution
+            (*stmt)->ins[numlines].P1 = 0;                       // with return value 0
             numlines++;
+
+            (*stmt)->num_instructions = numlines;
 
             break;
         }
@@ -464,6 +475,7 @@ int chidb_finalize(chidb_stmt *stmt)
 
 int chidb_column_count(chidb_stmt *stmt)
 {
+
 	return 0;
 }
 
