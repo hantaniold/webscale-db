@@ -475,26 +475,45 @@ int chidb_finalize(chidb_stmt *stmt)
 
 int chidb_column_count(chidb_stmt *stmt)
 {
+    switch (stmt->sql->type) {
+        case (STMT_SELECT):
+            return stmt->sql->query.select.select_ncols;
+            break;
+        case (STMT_INSERT):
+            return stmt->sql->query.insert.nvalues;
+            break;
 
+    }
+    
 	return 0;
 }
 
 int chidb_column_type(chidb_stmt *stmt, int col)
 {
-	return SQL_NOTVALID;
+	return chidb_DBRecord_getType(stmt->record, col);
 }
 
 const char *chidb_column_name(chidb_stmt* stmt, int col)
 {
+    switch(stmt->sql->type) {
+        case (STMT_SELECT):
+            return (stmt->sql->query.select.select_cols + col)->name;
+            break;
+    }
 	return "";
 }
 
 int chidb_column_int(chidb_stmt *stmt, int col)
 {
-	return 0;
+    int retval;
+    chidb_DBRecord_getInt32(stmt->record, col, &retval);
+    return retval;
 }
 
+// TODO: Free the returned string from memory...
 const char *chidb_column_text(chidb_stmt *stmt, int col)
 {
-	return "";
+    char * retval;
+    chidb_DBRecord_getString(stmt->record, col, &retval);
+	return retval;
 }
