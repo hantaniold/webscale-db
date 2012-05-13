@@ -324,7 +324,7 @@ int operation_string(dbm *input_dbm, chidb_instruction inst) {
 	input_dbm->registers[inst.P2].data.str_val = (char *)malloc(sizeof(char) * inst.P1);
 	input_dbm->registers[inst.P2].data_len = (size_t)inst.P1;
 	input_dbm->registers[inst.P2].touched = 1;
-	strcpy(input_dbm->registers[inst.P2].data.str_val, (char *)inst.P4);
+	strncpy(input_dbm->registers[inst.P2].data.str_val, (char *)inst.P4, (size_t)inst.P1);
 	return DBM_OK;
 }
 
@@ -547,6 +547,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			int retval = operation_integer(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
+				input_dbm->program_counter += 1;
 				return DBM_OK;
 			} else {
 				input_dbm->tick_result = retval;
@@ -558,6 +559,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			int retval = operation_string(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
+				input_dbm->program_counter += 1;
 				return DBM_OK;
 			} else {
 				input_dbm->tick_result = retval;
@@ -568,6 +570,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 		case DBM_NULL: {
 			input_dbm->registers[inst.P2].type = NL;
 			input_dbm->registers[inst.P2].touched = 1;
+			input_dbm->program_counter += 1;
 			input_dbm->tick_result = DBM_OK;
 			return DBM_OK;
 		}

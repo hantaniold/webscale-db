@@ -2,6 +2,7 @@
 #include "CUnit/Basic.h"
 #include "libchidb/btree.h"
 #include "libchidb/util.h"
+#include "libchidb/dbm.h"
 
 #define TESTFILE_1 ("test1.cdb") // String database w/ five pages, single B-Tree
 #define TESTFILE_2 ("test2.cdb") // Corrupt header
@@ -1033,9 +1034,49 @@ void test_8_3(void)
   free(db);
 }
 
+void test_9_1(void)
+{
+	dbm* test_dbm = init_dbm(NULL);
+	printf("\nTest DBM_INTEGER...\n");
+	chidb_instruction inst;
+	inst.instruction = DBM_INTEGER;
+	inst.P1 = 21768;
+	inst.P2 = 10;
+	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+	CU_ASSERT(test_dbm->registers[10].type == INTEGER);
+	CU_ASSERT(test_dbm->registers[10].data.int_val == 21768);
+	CU_ASSERT(test_dbm->program_counter == 1);
+	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
+	CU_ASSERT(test_dbm->program_counter == 0);  
+	printf("Test DBM_STRING...\n");
+	inst.instruction = DBM_STRING;
+	
+	inst.P1 = (uint32_t)strlen("charles");
+	char *name = (char *)malloc(inst.P1 * sizeof(char));
+	strncpy(name, "charles", (size_t)inst.P1);
+	inst.P2 = 200;
+	inst.P4 = (uint32_t)name;
+	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+	CU_ASSERT(test_dbm->registers[200].type == STRING);
+	CU_ASSERT(strcmp(test_dbm->registers[200].data.str_val, name) == 0);
+	CU_ASSERT(test_dbm->program_counter == 1);
+	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
+	CU_ASSERT(test_dbm->program_counter == 0);  
+	free(name);
+	
+	printf("Test DBM_NULL...\n");
+	inst.instruction = DBM_NULL;
+	inst.P2 = 0;
+	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+	CU_ASSERT(test_dbm->registers[0].type == NL);
+	CU_ASSERT(test_dbm->program_counter == 1);
+	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
+	CU_ASSERT(test_dbm->program_counter == 0);  
+}
+
 int init_tests_btree()
 {
-  CU_pSuite openexistingTests, loadnodeTests, createwriteTests, opennewTests, cellTests, findTests, insertnosplitTests, insertTests, indexTests;
+  CU_pSuite openexistingTests, loadnodeTests, createwriteTests, opennewTests, cellTests, findTests, insertnosplitTests, insertTests, indexTests, dbmTests;
   
   /* add suites to the registry */
   if (
@@ -1047,7 +1088,8 @@ int init_tests_btree()
       NULL == (findTests =          CU_add_suite("Step 5: Finding a value in a B-Tree", NULL, NULL))	||
       NULL == (insertnosplitTests = CU_add_suite("Step 6: Insertion into a leaf without splitting", NULL, NULL))	||
       NULL == (insertTests =        CU_add_suite("Step 7: Insertion with splitting", NULL, NULL))	||
-      NULL == (indexTests =         CU_add_suite("Step 8: Supporting index B-Trees", NULL, NULL))
+      NULL == (indexTests =         CU_add_suite("Step 8: Supporting index B-Trees", NULL, NULL)) ||
+      NULL == (dbmTests = 					CU_add_suite("Step 9: Testing DBM commands", NULL, NULL))
       ) 
     {
       CU_cleanup_registry();
@@ -1106,7 +1148,9 @@ int init_tests_btree()
       /* Step 8 */
       (NULL == CU_add_test(indexTests, "8.1", test_8_1)) ||
       (NULL == CU_add_test(indexTests, "8.2", test_8_2)) ||
-      (NULL == CU_add_test(indexTests, "8.3", test_8_3))
+      (NULL == CU_add_test(indexTests, "8.3", test_8_3)) ||
+      
+      (NULL == CU_add_test(dbmTests, "9.1", test_9_1))
       )
     {
       CU_cleanup_registry();
