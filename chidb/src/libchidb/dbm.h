@@ -125,7 +125,7 @@ struct chidb_stmt {
 };
 
 //THIS WILL CREATE A NEW DBM STRUCT
-int init_dbm(dbm *, chidb *);
+dbm * init_dbm(chidb *db);
 
 //THIS RESETS A DBM TO ITS INITIAL STATE
 int reset_dbm(dbm *);
