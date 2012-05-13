@@ -381,7 +381,6 @@ int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_next(dbm *input_dbm, chidb_instruction inst) {
-	
 	return DBM_OK;
 }
 
@@ -393,7 +392,50 @@ int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_column(dbm *input_dbm, chidb_instruction inst) {
-	return DBM_OK;
+	DBRecord *record;
+	chidb_DBRecord_unpack(&(record), input_dbm->cursors[inst.P1].curr_cell->fields.tableLeaf.data);
+	int type = chidb_DBRecord_getType(record, inst.P2);
+	if (type == SQL_NULL) {
+		input_dbm->registers[inst.P3].type = NL;
+		input_dbm->program_counter += 1;
+		return DBM_OK;
+	}
+	if (type == SQL_INTEGER_1BYTE || type == SQL_INTEGER_2BYTE || type == SQL_INTEGER_4BYTE) {
+		input_dbm->registers[inst.P3].type = INTEGER;
+		if (type == SQL_INTEGER_1BYTE) {
+			int8_t *v = (int8_t *)malloc(sizeof(int8_t));
+			chidb_DBRecord_getInt8(record, inst.P2, v);
+			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
+			free(v);
+		}
+		if (type == SQL_INTEGER_2BYTE) {
+			int16_t *v = (int16_t *)malloc(sizeof(int16_t));
+			chidb_DBRecord_getInt16(record, inst.P2, v);
+			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
+			free(v);
+		}
+		if (type == SQL_INTEGER_4BYTE) {
+			int32_t *v = (int32_t *)malloc(sizeof(int32_t));
+			chidb_DBRecord_getInt32(record, inst.P2, v);
+			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
+			free(v);
+		}
+		input_dbm->program_counter += 1;
+		return DBM_OK;
+	}
+	if (type == SQL_TEXT) {
+		input_dbm->registers[inst.P3].type = STRING;
+		int *len = (int *)malloc(sizeof(int));
+		chidb_DBRecord_getStringLength(record, inst.P2, len);
+		input_dbm->registers[inst.P3].data.str_val = (char *)malloc((*len) * sizeof(char));
+		chidb_DBRecord_getString(record, inst.P2, &(input_dbm->registers[inst.P3].data.str_val));
+		input_dbm->registers[inst.P3].data_len = (size_t)(*len);
+		free(len);
+		input_dbm->program_counter += 1;
+		return DBM_OK;
+	}
+	//WE HAVE AN INVALID TYPE
+	return DBM_INVALID_TYPE;
 }
 
 int operation_result_row(dbm *input_dbm, chidb_instruction inst) {
