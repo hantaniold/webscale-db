@@ -1034,45 +1034,85 @@ void test_8_3(void)
   free(db);
 }
 
+//STORES A STRING IN THE DBM AT SPECIFIED REGISTER
+void string_inst(dbm *input_dbm, uint32_t r_num, const char *str) {
+	chidb_instruction inst;
+	uint32_t old_pc = input_dbm->program_counter;
+	inst.instruction = DBM_STRING;
+	inst.P1 = (uint32_t)strlen(str);
+	char *word = (char *)malloc(inst.P1 * sizeof(char));
+	inst.P2 = r_num;
+	inst.P4 = (uint32_t)word;
+	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
+	CU_ASSERT(input_dbm->registers[r_num].type == STRING);
+	CU_ASSERT(strcmp(input_dbm->registers[r_num].data.str_val, word) == 0);
+	CU_ASSERT(input_dbm->program_counter == (old_pc + 1));
+	free(word);
+}
+
+void integer_inst(dbm *input_dbm, uint32_t r_num, int32_t val) {
+	chidb_instruction inst;
+	inst.instruction = DBM_INTEGER;
+	uint32_t old_pc = input_dbm->program_counter;
+	inst.P1 = val;
+	inst.P2 = r_num;
+	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
+	CU_ASSERT(input_dbm->registers[r_num].type == INTEGER);
+	CU_ASSERT(input_dbm->registers[r_num].data.int_val == val);
+	CU_ASSERT(input_dbm->program_counter == (old_pc + 1));
+}
+
+void null_inst(dbm *input_dbm, uint32_t r_num) {
+	chidb_instruction inst;
+	inst.instruction = DBM_NULL;
+	uint32_t old_pc = input_dbm->program_counter;
+	inst.P2 = r_num;
+	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
+	CU_ASSERT(input_dbm->registers[r_num].type == NL);
+	CU_ASSERT(input_dbm->program_counter == (old_pc + 1));
+}
+
 void test_9_1(void)
 {
 	dbm* test_dbm = init_dbm(NULL);
 	printf("\nTest DBM_INTEGER...\n");
-	chidb_instruction inst;
-	inst.instruction = DBM_INTEGER;
-	inst.P1 = 21768;
-	inst.P2 = 10;
-	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
-	CU_ASSERT(test_dbm->registers[10].type == INTEGER);
-	CU_ASSERT(test_dbm->registers[10].data.int_val == 21768);
-	CU_ASSERT(test_dbm->program_counter == 1);
+	integer_inst(test_dbm, 10, 21678);
 	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
 	CU_ASSERT(test_dbm->program_counter == 0);  
-	printf("Test DBM_STRING...\n");
-	inst.instruction = DBM_STRING;
 	
-	inst.P1 = (uint32_t)strlen("charles");
-	char *name = (char *)malloc(inst.P1 * sizeof(char));
-	strncpy(name, "charles", (size_t)inst.P1);
-	inst.P2 = 200;
-	inst.P4 = (uint32_t)name;
-	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
-	CU_ASSERT(test_dbm->registers[200].type == STRING);
-	CU_ASSERT(strcmp(test_dbm->registers[200].data.str_val, name) == 0);
-	CU_ASSERT(test_dbm->program_counter == 1);
+	printf("Test DBM_STRING...\n");
+	string_inst(test_dbm, 200, "charles");
 	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
 	CU_ASSERT(test_dbm->program_counter == 0);  
-	free(name);
 	
 	printf("Test DBM_NULL...\n");
-	inst.instruction = DBM_NULL;
-	inst.P2 = 0;
-	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
-	CU_ASSERT(test_dbm->registers[0].type == NL);
-	CU_ASSERT(test_dbm->program_counter == 1);
+	null_inst(test_dbm, 0);
 	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
 	CU_ASSERT(test_dbm->program_counter == 0);  
+	free(test_dbm);
 }
+
+void test_9_2(void) {
+	dbm* test_dbm = init_dbm(NULL);
+	printf("\nTest DBM_EQ...\n");
+	string_inst(test_dbm, 100, "charles");
+	string_inst(test_dbm, 200, "charles");
+	chidb_instruction inst;
+	inst.instruction = DBM_EQ;
+	inst.P1 = 100;
+	inst.P2 = 7;
+	inst.P3 = 200;
+	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+	CU_ASSERT(test_dbm->program_counter == 7);
+	printf("\nTest DBM_NE...\n");
+	printf("\nTest DBM_LT...\n");
+	printf("\nTest DBM_LE...\n");
+	printf("\nTest DBM_GT...\n");
+	printf("\nTest DBM_GE...\n");
+	free(test_dbm);
+}
+
+
 
 int init_tests_btree()
 {
@@ -1149,8 +1189,9 @@ int init_tests_btree()
       (NULL == CU_add_test(indexTests, "8.1", test_8_1)) ||
       (NULL == CU_add_test(indexTests, "8.2", test_8_2)) ||
       (NULL == CU_add_test(indexTests, "8.3", test_8_3)) ||
-      
-      (NULL == CU_add_test(dbmTests, "9.1", test_9_1))
+      /* DBM TESTS */
+      (NULL == CU_add_test(dbmTests, "9.1 - DBM_INTEGER, DBM_STRING, and DBM_NULL", test_9_1)) ||
+      (NULL == CU_add_test(dbmTests, "9.2 - DBM_EQ, DBM_NE, DBM_LT, DBM_LE, DBM_GT, and DBM_GE", test_9_2))
       )
     {
       CU_cleanup_registry();
