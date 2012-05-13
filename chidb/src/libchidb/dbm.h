@@ -24,7 +24,7 @@
 //INTERNAL DBM RETURN TYPES
 #define DBM_OK (0)
 #define DBM_HALT_STATE (1)
-#define DBM_RESULT
+#define DBM_RESULT (2)
 
 //INTERNAL DBM READ / WRITE STATES
 #define DBM_READ_STATE (0)
@@ -120,6 +120,8 @@ struct chidb_stmt {
     DBRecord *record;
     chidb *db;
     SQLStatement *sql;
+    uint8_t initialized_dbm;
+    dbm *input_dbm;
 };
 
 //THIS WILL CREATE A NEW DBM STRUCT

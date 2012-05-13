@@ -465,6 +465,25 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
 
 int chidb_step(chidb_stmt *stmt)
 {
+	if (stmt->initialized_dbm == 0) {
+		//dbm needs to be initialized
+		stmt->input_dbm = init_dbm(stmt->db);
+		stmt->initialized_dbm = 1;
+	}
+	//INSTRUCTION LOOP
+	uint32_t result = 0;
+	do {
+		result = tick_dbm(stmt->input_dbm, *(stmt->ins + stmt->input_dbm->program_counter));
+	} while (result == DBM_OK);
+	
+	if (result == DBM_HALT_STATE) {
+		//check if error
+		//TODO: IMPLEMENT ERROR HANDING AND ERROR MESSAGE REPORTING
+	}
+	if (result == DBM_RESULT) {
+		//we have a result to put together
+	}
+	
 	return CHIDB_OK;
 }
 

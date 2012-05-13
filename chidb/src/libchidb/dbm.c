@@ -12,8 +12,8 @@
 */
 
 //THIS WILL CREATE A NEW DBM STRUCT
-int init_dbm(dbm *input_dbm, chidb *db) {
-	input_dbm = (dbm *)calloc(1, sizeof(dbm));
+dbm * init_dbm(chidb *db) {
+	dbm * input_dbm = (dbm *)calloc(1, sizeof(dbm));
 	input_dbm->db = db;
 	for (int i = 0; i < DBM_MAX_REGISTERS; ++i) {
 		input_dbm->registers[i].touched = 0;
@@ -22,11 +22,7 @@ int init_dbm(dbm *input_dbm, chidb *db) {
 	for (int i = 0; i < DBM_MAX_CURSORS; ++i) {
 		input_dbm->cursors[i].touched = 0;
 	}
-	if (input_dbm == NULL) {
-		return CHIDB_ENOMEM;
-	} else {
-		return reset_dbm(input_dbm);
-	}
+	return input_dbm;
 }
 
 int operation_cursor_close(dbm *input_dbm, uint32_t cursor_id) {
@@ -73,7 +69,12 @@ int reset_dbm(dbm *input_dbm) {
 			operation_cursor_close(input_dbm, i);
 		}
 		mycursor.touched = 0;
-	}
+		mycursor.node = (BTreeNode *)calloc(1, sizeof(BTreeNode));
+		mycursor.curr_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
+		mycursor.next_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
+		mycursor.prev_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
+		mycursor.touched = 1;
+	}	
 	return CHIDB_OK;
 }
 
@@ -328,9 +329,6 @@ int operation_string(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_rewind(dbm *input_dbm, chidb_instruction inst) {
-	input_dbm->cursors[inst.P1].curr_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
-	input_dbm->cursors[inst.P1].next_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
-	input_dbm->cursors[inst.P1].prev_cell = NULL;
 	input_dbm->cursors[inst.P1].cell_num = 0; 
 	input_dbm->cursors[inst.P1].touched = 1;
 	int retval = chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, 0, input_dbm->cursors[inst.P1].curr_cell);	
@@ -471,7 +469,6 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			}
 			uint32_t page_num = (input_dbm->registers[inst.P2]).data.int_val;
 			input_dbm->cursors[inst.P1].touched = 1;
-			input_dbm->cursors[inst.P1].node = (BTreeNode *)calloc(1, sizeof(BTreeNode));
 			if (chidb_Btree_getNodeByPage(input_dbm->db->bt, page_num, &(input_dbm->cursors[inst.P1].node)) == CHIDB_OK) {
 				input_dbm->tick_result = DBM_OK;
 				input_dbm->program_counter += 1;
