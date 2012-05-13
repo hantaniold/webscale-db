@@ -272,7 +272,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                         (*stmt)->ins[numlines].instruction = DBM_STRING;                                             // String type
                         (*stmt)->ins[numlines].P1 = strlen(sql_stmt->query.select.where_conds[0].op2.string) + 1;    // Store the length
                         (*stmt)->ins[numlines].P2 = 1;                                                               // into register 1
-                        (*stmt)->ins[numlines].P4 = (uint32_t)(sql_stmt->query.select.where_conds[0].op2.string);    // and keep a ptr
+                        (*stmt)->ins[numlines].P4 = sql_stmt->query.select.where_conds[0].op2.string;						     // and keep a ptr
                         numlines++;
                         rmax = 1;
                     } else if(sql_stmt->query.select.where_conds[0].op2Type == OP2_COL) {

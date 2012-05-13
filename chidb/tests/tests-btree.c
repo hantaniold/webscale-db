@@ -1041,8 +1041,9 @@ void string_inst(dbm *input_dbm, uint32_t r_num, const char *str) {
 	inst.instruction = DBM_STRING;
 	inst.P1 = (uint32_t)strlen(str);
 	char *word = (char *)malloc(inst.P1 * sizeof(char));
+	strncpy(word, str, inst.P1);
 	inst.P2 = r_num;
-	inst.P4 = (uint32_t)word;
+	inst.P4 = word;
 	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
 	CU_ASSERT(input_dbm->registers[r_num].type == STRING);
 	CU_ASSERT(strcmp(input_dbm->registers[r_num].data.str_val, word) == 0);
@@ -1072,6 +1073,15 @@ void null_inst(dbm *input_dbm, uint32_t r_num) {
 	CU_ASSERT(input_dbm->program_counter == (old_pc + 1));
 }
 
+void eq_inst(dbm *input_dbm, uint32_t r_num1, uint32_t jump_addr, uint32_t r_num2) {
+	chidb_instruction inst;
+	inst.instruction = DBM_EQ;
+	inst.P1 = r_num1;
+	inst.P2 = jump_addr;
+	inst.P3 = r_num2;
+	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
+}
+
 void test_9_1(void)
 {
 	dbm* test_dbm = init_dbm(NULL);
@@ -1081,7 +1091,10 @@ void test_9_1(void)
 	CU_ASSERT(test_dbm->program_counter == 0);  
 	
 	printf("Test DBM_STRING...\n");
-	string_inst(test_dbm, 200, "charles");
+	string_inst(test_dbm, 200, "charles\0");
+	CU_ASSERT(strcmp(test_dbm->registers[200].data.str_val, "ch56les\0") != 0);
+	printf("9.1 str: %c\n", test_dbm->registers[200].data.str_val[0]);
+	CU_ASSERT(strcmp(test_dbm->registers[200].data.str_val, "charles\0") == 0);
 	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
 	CU_ASSERT(test_dbm->program_counter == 0);  
 	
@@ -1095,15 +1108,22 @@ void test_9_1(void)
 void test_9_2(void) {
 	dbm* test_dbm = init_dbm(NULL);
 	printf("\nTest DBM_EQ...\n");
-	string_inst(test_dbm, 100, "charles");
-	string_inst(test_dbm, 200, "charles");
-	chidb_instruction inst;
-	inst.instruction = DBM_EQ;
-	inst.P1 = 100;
-	inst.P2 = 7;
-	inst.P3 = 200;
-	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+	string_inst(test_dbm, 100, "charles\0");
+	string_inst(test_dbm, 200, "charles\0");
+	eq_inst(test_dbm, 100, 7, 200);
 	CU_ASSERT(test_dbm->program_counter == 7);
+	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
+	CU_ASSERT(test_dbm->program_counter == 0); 
+	string_inst(test_dbm, 100, "charles\0");
+	string_inst(test_dbm, 200, "bob\0");
+	eq_inst(test_dbm, 100, 7, 200);
+	CU_ASSERT(test_dbm->program_counter == 3);
+	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
+	CU_ASSERT(test_dbm->program_counter == 0); 
+	string_inst(test_dbm, 100, "charles\0");
+	string_inst(test_dbm, 200, "cHarle1\0");
+	eq_inst(test_dbm, 100, 7, 200);
+	CU_ASSERT(test_dbm->program_counter == 3);
 	printf("\nTest DBM_NE...\n");
 	printf("\nTest DBM_LT...\n");
 	printf("\nTest DBM_LE...\n");

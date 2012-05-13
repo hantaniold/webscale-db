@@ -25,6 +25,15 @@ dbm * init_dbm(chidb *db) {
 	return input_dbm;
 }
 
+//HELPER FUNCTION
+uint32_t dbm_min(uint32_t v1, uint32_t v2) {
+	if (v1 < v2) {
+		return v1;
+	} else {
+		return v2;
+	}
+}
+
 int operation_cursor_close(dbm *input_dbm, uint32_t cursor_id) {
 	dbm_cursor mycursor = input_dbm->cursors[cursor_id];
 	if (mycursor.touched == 1) {
@@ -89,8 +98,12 @@ int operation_eq(dbm *input_dbm, chidb_instruction inst) {
 				}
 				break;
 			case STRING:
-				if (strcmp(input_dbm->registers[inst.P1].data.str_val, input_dbm->registers[inst.P3].data.str_val) == 0){
-					input_dbm->program_counter = inst.P2;
+				if (input_dbm->registers[inst.P1].data_len == input_dbm->registers[inst.P3].data_len) {
+					if (strcmp(input_dbm->registers[inst.P1].data.str_val, input_dbm->registers[inst.P3].data.str_val) == 0){
+						input_dbm->program_counter = inst.P2;
+					} else {
+						input_dbm->program_counter += 1;	
+					}
 				} else {
 					input_dbm->program_counter += 1;	
 				}
@@ -321,10 +334,10 @@ int operation_integer(dbm *input_dbm, chidb_instruction inst) {
 
 int operation_string(dbm *input_dbm, chidb_instruction inst) {
 	input_dbm->registers[inst.P2].type = STRING;
-	input_dbm->registers[inst.P2].data.str_val = (char *)malloc(sizeof(char) * inst.P1);
+	input_dbm->registers[inst.P2].data.str_val = (char *)calloc(inst.P1, sizeof(char));
 	input_dbm->registers[inst.P2].data_len = (size_t)inst.P1;
 	input_dbm->registers[inst.P2].touched = 1;
-	strncpy(input_dbm->registers[inst.P2].data.str_val, (char *)inst.P4, (size_t)inst.P1);
+	strncpy(input_dbm->registers[inst.P2].data.str_val, inst.P4, (size_t)inst.P1);
 	return DBM_OK;
 }
 
@@ -686,7 +699,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			if (inst.P1 == 0) {
 				input_dbm->tick_result = DBM_OK;
 			} else {
-				input_dbm->tick_result = inst.P4;
+				input_dbm->error_str = inst.P4;
 			}
 			return DBM_HALT_STATE;
 	}

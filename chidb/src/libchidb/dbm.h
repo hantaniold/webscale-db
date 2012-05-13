@@ -97,6 +97,7 @@ typedef struct dbm_cursor dbm_cursor;
 struct dbm {
 	uint32_t program_counter;
 	uint32_t tick_result; //stores the result of the last tick operation - used for error tracking
+	char *error_str;
 	uint8_t readwritestate;
 	dbm_register registers[DBM_MAX_REGISTERS];
 	dbm_cursor cursors[DBM_MAX_CURSORS];
@@ -110,7 +111,7 @@ struct chidb_instruction {
 	uint32_t P1;
 	uint32_t P2;
 	uint32_t P3;
-	uint32_t P4;
+	char * P4;
 };
 typedef struct chidb_instruction chidb_instruction;
 
