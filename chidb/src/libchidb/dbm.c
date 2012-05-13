@@ -460,10 +460,6 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 	return DBM_INVALID_TYPE;
 }
 
-int operation_result_row(dbm *input_dbm, chidb_instruction inst) {
-	return DBM_OK;
-}
-
 int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 	switch (inst.instruction) {
 		case DBM_OPENWRITE:
@@ -579,15 +575,8 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			return DBM_OK;
 		}
 		case DBM_RESULTROW: {
-			int retval = operation_result_row(input_dbm, inst);
-			if (retval == DBM_OK) {
-				input_dbm->tick_result = DBM_OK;
-				return DBM_OK;
-			} else {
-				input_dbm->tick_result = retval;
-				return DBM_HALT_STATE;
-			}
-			break;
+			input_dbm->tick_result = DBM_OK;
+			return DBM_RESULT;
 		}
 		case DBM_MAKERECORD: {
 			int retval = operation_db_record(input_dbm, inst);
