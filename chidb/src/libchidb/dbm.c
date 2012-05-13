@@ -396,8 +396,20 @@ int operation_next(dbm *input_dbm, chidb_instruction inst) {
 
 //DBM_INSERT
 int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
-//TODO: ERROR HANDLING
-	chidb_Btree_insertInTable(input_dbm->db->bt, (npage_t)(*(input_dbm->db->bt->schema_table))->root_page, (key_t)input_dbm->registers[inst.P3].data.int_val, input_dbm->registers[inst.P2].data.record_val->data, (uint16_t)input_dbm->registers[inst.P2].data.record_val->data_len);
+	if (input_dbm->registers[inst.P2].type == RECORD) {
+		int retval = chidb_Btree_insertInTable(input_dbm->db->bt, (npage_t)(*(input_dbm->db->bt->schema_table))->root_page, (key_t)input_dbm->registers[inst.P3].data.int_val, input_dbm->registers[inst.P2].data.record_val->data, (uint16_t)input_dbm->registers[inst.P2].data.record_val->data_len);
+		if (retval == CHIDB_EDUPLICATE) {
+			return DBM_DUPLICATE_KEY;
+		}
+		if (retval == CHIDB_ENOMEM) {
+			return DBM_MEMORY_ERROR;
+		}
+		if (retval == CHIDB_EIO) {
+			return DBM_IO_ERROR;
+		}
+	} else {
+		return DBM_INVALID_TYPE;
+	}
 	return DBM_OK;
 }
 
