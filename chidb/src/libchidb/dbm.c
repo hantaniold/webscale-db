@@ -120,9 +120,12 @@ int operation_eq(dbm *input_dbm, chidb_instruction inst) {
 				} 
 				break;
 			case NL:
+				input_dbm->program_counter = inst.P2;
 			case RECORD:
 				break;
 		}
+		return DBM_OK;
+	} else {
 		if (input_dbm->registers[inst.P1].type == NL) {
 			switch (input_dbm->registers[inst.P3].type) {
 				case INTEGER:
@@ -147,6 +150,7 @@ int operation_eq(dbm *input_dbm, chidb_instruction inst) {
 				case RECORD:
 				break;
 			}
+			return DBM_OK;
 		}
 		if (input_dbm->registers[inst.P3].type == NL) {
 			switch (input_dbm->registers[inst.P1].type) {
@@ -172,9 +176,8 @@ int operation_eq(dbm *input_dbm, chidb_instruction inst) {
 				case RECORD:
 				break;
 			}
+			return DBM_OK;
 		}
-		return DBM_OK;
-	} else {
 		return DBM_REGISTER_TYPE_MISMATCH;
 	}
 }

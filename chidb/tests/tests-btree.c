@@ -1178,7 +1178,7 @@ void test_9_2(void) {
 	reset_assert(test_dbm);
 	
 	null_inst(test_dbm, 10);
-	integer_inst(test_dbm, 1, 4);
+	integer_inst(test_dbm, 100, 4);
 	eq_inst(test_dbm, 10, 77, 100);
 	CU_ASSERT(test_dbm->program_counter == 3);
 	reset_assert(test_dbm);
