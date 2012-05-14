@@ -1550,7 +1550,8 @@ void test_9_10(void) {
 
     remove(MULTIINDEXFILE);
     db = malloc(sizeof(chidb));
-    rc = chidb_Btree_open(MULTIINDEXFILE, db, &db->bt);
+    BTree * bt;
+    rc = chidb_Btree_open(MULTIINDEXFILE, db, &bt);
     CU_ASSERT(rc == CHIDB_OK);
     
     dbm * test_dbm = init_dbm(db);
