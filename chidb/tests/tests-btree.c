@@ -1280,6 +1280,46 @@ void test_9_4(void) {
 }
 void test_9_5(void) {
 	//DBM_LE
+	//DBM_LT
+	dbm* test_dbm = init_dbm(NULL);
+	integer_inst(test_dbm, 0, 123);
+	integer_inst(test_dbm, 1, 44);
+	le_inst(test_dbm, 0, 42, 1);
+	CU_ASSERT(test_dbm->program_counter == 3);
+	reset_assert(test_dbm);
+	
+	integer_inst(test_dbm, 0, 44);
+	integer_inst(test_dbm, 1, 44);
+	le_inst(test_dbm, 0, 42, 1);
+	CU_ASSERT(test_dbm->program_counter == 42);
+	reset_assert(test_dbm);
+	
+	integer_inst(test_dbm, 0, 123);
+	integer_inst(test_dbm, 1, 1000);
+	le_inst(test_dbm, 0, 42, 1);
+	CU_ASSERT(test_dbm->program_counter == 42);
+	reset_assert(test_dbm);
+	
+	string_inst(test_dbm, 100, "charles\0");
+	string_inst(test_dbm, 200, "charles\0");
+	le_inst(test_dbm, 100, 42, 200);
+	CU_ASSERT(test_dbm->program_counter == 42);
+	CU_ASSERT(strcmp(test_dbm->registers[100].data.str_val, "charles\0") == 0);
+	reset_assert(test_dbm);
+	
+	string_inst(test_dbm, 100, "aharles\0");
+	string_inst(test_dbm, 200, "charles\0");
+	le_inst(test_dbm, 100, 42, 200);
+	CU_ASSERT(test_dbm->program_counter == 42);
+	reset_assert(test_dbm);
+	
+	string_inst(test_dbm, 100, "dharles\0");
+	string_inst(test_dbm, 200, "charles\0");
+	le_inst(test_dbm, 100, 42, 200);
+	CU_ASSERT(test_dbm->program_counter == 3);
+	reset_assert(test_dbm);
+	
+	free(test_dbm);
 }
 void test_9_6(void) {
 	//DBM_GT
