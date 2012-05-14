@@ -1144,6 +1144,35 @@ void test_9_2(void) {
 	eq_inst(test_dbm, 0, 77, 1);
 	CU_ASSERT(test_dbm->program_counter == 77);
 	CU_ASSERT(test_dbm->registers[0].data.int_val == -1);
+	
+	null_inst(test_dbm, 10);
+	null_inst(test_dbm, 100);
+	eq_inst(test_dbm, 10, 77, 100);
+	CU_ASSERT(test_dbm->program_counter == 77);
+	reset_assert(test_dbm);
+	
+	null_inst(test_dbm, 10);
+	integer_inst(test_dbm, 1, NULL);
+	eq_inst(test_dbm, 10, 77, 100);
+	CU_ASSERT(test_dbm->program_counter == 77);
+	reset_assert(test_dbm);
+	
+	null_inst(test_dbm, 10);
+	integer_inst(test_dbm, 1, 4);
+	eq_inst(test_dbm, 10, 77, 100);
+	CU_ASSERT(test_dbm->program_counter == 3);
+	reset_assert(test_dbm);
+	
+	null_inst(test_dbm, 10);
+	string_inst(test_dbm, 100, NULL);
+	eq_inst(test_dbm, 10, 77, 100);
+	CU_ASSERT(test_dbm->program_counter == 77);
+	reset_assert(test_dbm);
+	
+	null_inst(test_dbm, 10);
+	string_inst(test_dbm, 100, "charles\0");
+	eq_inst(test_dbm, 10, 77, 100);
+	CU_ASSERT(test_dbm->program_counter == 3);
 	reset_assert(test_dbm);
 	free(test_dbm);
 }

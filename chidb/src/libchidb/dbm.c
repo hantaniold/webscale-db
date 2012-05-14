@@ -120,14 +120,58 @@ int operation_eq(dbm *input_dbm, chidb_instruction inst) {
 				} 
 				break;
 			case NL:
-				if (input_dbm->registers[inst.P1].type == NL && input_dbm->registers[inst.P3].type == NL)  {
-					input_dbm->program_counter = inst.P2;
-				} else {
-					input_dbm->program_counter += 1;	
-				}
-				break;
 			case RECORD:
 				break;
+		}
+		if (input_dbm->registers[inst.P1].type == NL) {
+			switch (input_dbm->registers[inst.P3].type) {
+				case INTEGER:
+					if (input_dbm->registers[inst.P3].data.int_val == NULL) {
+						input_dbm->program_counter = inst.P2;
+					} else {
+						input_dbm->program_counter += 1;	
+					}
+				break;
+				case STRING:
+					if (input_dbm->registers[inst.P3].data.str_val == NULL) {
+						input_dbm->program_counter = inst.P2;
+					} else {
+						input_dbm->program_counter += 1;	
+					}
+				break;
+				case NL:
+					input_dbm->program_counter = inst.P2;
+				break;
+				//THESE ARE UNIMPLEMENTED BECAUSE THEY WILL NOT BE USED
+				case BINARY:
+				case RECORD:
+				break;
+			}
+		}
+		if (input_dbm->registers[inst.P3].type == NL) {
+			switch (input_dbm->registers[inst.P1].type) {
+				case INTEGER:
+					if (input_dbm->registers[inst.P1].data.int_val == NULL) {
+						input_dbm->program_counter = inst.P2;
+					} else {
+						input_dbm->program_counter += 1;	
+					}
+				break;
+				case STRING:
+					if (input_dbm->registers[inst.P1].data.str_val == NULL) {
+						input_dbm->program_counter = inst.P2;
+					} else {
+						input_dbm->program_counter += 1;	
+					}
+				break;
+				case NL:
+					input_dbm->program_counter = inst.P2;
+				break;
+				//THESE ARE UNIMPLEMENTED BECAUSE THEY WILL NOT BE USED
+				case BINARY:
+				case RECORD:
+				break;
+			}
 		}
 		return DBM_OK;
 	} else {
