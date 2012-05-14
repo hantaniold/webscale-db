@@ -1249,12 +1249,11 @@ int init_tests_btree()
     }
   
   if (
-      /* Step 1a */
+          /*
       (NULL == CU_add_test(openexistingTests, "1a.1", test_1a_1)) ||
       (NULL == CU_add_test(openexistingTests, "1a.2", test_1a_2)) ||
       (NULL == CU_add_test(openexistingTests, "1a.3", test_1a_3)) ||
       
-      /* Step 2 */
       (NULL == CU_add_test(loadnodeTests, "2.1", test_2_1)) ||
       (NULL == CU_add_test(loadnodeTests, "2.2", test_2_2)) ||
       (NULL == CU_add_test(loadnodeTests, "2.3", test_2_3)) ||
@@ -1262,7 +1261,6 @@ int init_tests_btree()
       (NULL == CU_add_test(loadnodeTests, "2.5", test_2_5)) ||
       (NULL == CU_add_test(loadnodeTests, "2.6", test_2_6)) ||
 		
-      /* Step 3 */
       (NULL == CU_add_test(createwriteTests, "3.1", test_3_1)) ||
       (NULL == CU_add_test(createwriteTests, "3.2", test_3_2)) ||
       (NULL == CU_add_test(createwriteTests, "3.3", test_3_3)) ||
@@ -1274,33 +1272,28 @@ int init_tests_btree()
       (NULL == CU_add_test(createwriteTests, "3.9", test_3_9)) ||
       (NULL == CU_add_test(createwriteTests, "3.10", test_3_10)) ||
       
-      /* Step 1b */
       (NULL == CU_add_test(opennewTests, "1b.1", test_1b_1)) ||
       (NULL == CU_add_test(opennewTests, "1b.2", test_1b_2)) ||
       
-      /* Step 4 */
       (NULL == CU_add_test(cellTests, "4.1", test_4_1)) ||
       (NULL == CU_add_test(cellTests, "4.2", test_4_2)) ||
       (NULL == CU_add_test(cellTests, "4.3", test_4_3)) ||
       (NULL == CU_add_test(cellTests, "4.4", test_4_4)) ||
       
-      /* Step 5 */
       (NULL == CU_add_test(findTests, "5.1", test_5_1)) ||
       (NULL == CU_add_test(findTests, "5.2", test_5_2)) ||
       
-      /* Step 6 */
       (NULL == CU_add_test(insertnosplitTests, "6.1", test_6_1)) ||
       (NULL == CU_add_test(insertnosplitTests, "6.2", test_6_2)) ||
       
-      /* Step 7 */
       (NULL == CU_add_test(insertTests, "7.1", test_7_1)) ||
       (NULL == CU_add_test(insertTests, "7.2", test_7_2)) ||
       (NULL == CU_add_test(insertTests, "7.3", test_7_3)) ||
       
-      /* Step 8 */
       (NULL == CU_add_test(indexTests, "8.1", test_8_1)) ||
       (NULL == CU_add_test(indexTests, "8.2", test_8_2)) ||
       (NULL == CU_add_test(indexTests, "8.3", test_8_3)) ||
+      */
       /* DBM TESTS */
       (NULL == CU_add_test(dbmTests, "9.1 - DBM_INTEGER, DBM_STRING, and DBM_NULL", test_9_1)) ||
       (NULL == CU_add_test(dbmTests, "9.2 - DBM_EQ", test_9_2)) || 
