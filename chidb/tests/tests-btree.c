@@ -15,6 +15,8 @@
 
 #define TEMPFILE ("temp.cdb") // Used to modify temporary files
 
+#define MULTIINDEXFILE ("tableindex_multipage.cdb") 
+
 key_t file1_keys[] = {1,2,3,7,10,15,20,35,37,42,127,1000,2000,3000,4000,5000};
 char *file1_values[] = {"foo1","foo2","foo3","foo7","foo10","foo15",
 			"foo20","foo35","foo37","foo42","foo127","foo1000",
@@ -1495,11 +1497,71 @@ void test_9_8(void) {
 	free(test_dbm);
 }
 
-void test_9_9(void) {
-	//DBM_OPENREAD
+
+
+/* is_error - should the result of this test be an error */
+void openread_inst(dbm * input_dbm, uint32_t cursor_nr, uint32_t reg_nr, uint32_t page_nr, uint32_t is_error) {
+    chidb_instruction inst;
+    int old_pc = input_dbm->program_counter;
+    inst.instruction = DBM_OPENREAD;
+    inst.P1 = cursor_nr;
+    inst.P2 = reg_nr;
+    input_dbm->registers[inst.P2].data.int_val = page_nr;
+   
+    int res = tick_dbm(input_dbm, inst);
+    if (!is_error) {
+        CU_ASSERT(res == DBM_OK);
+        if (res != DBM_OK) return;
+        CU_ASSERT(input_dbm->readwritestate == DBM_READ_STATE);
+        CU_ASSERT(input_dbm->cursors[cursor_nr].node->page->npage == page_nr);
+        CU_ASSERT(old_pc == input_dbm->program_counter + 1);
+    } else {
+        CU_ASSERT(res == DBM_HALT_STATE);
+        CU_ASSERT(old_pc == input_dbm->program_counter);
+        CU_ASSERT(input_dbm->tick_result == DBM_OPENRW_ERROR);
+    }
+    
 }
 
+void test_9_9(void) {
+	chidb * db;
+    int rc;
+
+    remove(MULTIINDEXFILE);
+    db = malloc(sizeof(chidb));
+    rc = chidb_Btree_open(MULTIINDEXFILE, db, &db->bt);
+    CU_ASSERT(rc == CHIDB_OK);
+    
+    dbm * test_dbm = init_dbm(db);
+
+    openread_inst(test_dbm, 3, 2, -42, 1);
+    reset_assert(test_dbm);
+
+    printf("shoop\n");
+    openread_inst(test_dbm, 3, 2, 4, 0);
+    reset_assert(test_dbm);
+
+    free(test_dbm);
+}
+
+
 void test_9_10(void) {
+	chidb * db;
+    int rc;
+
+    remove(MULTIINDEXFILE);
+    db = malloc(sizeof(chidb));
+    rc = chidb_Btree_open(MULTIINDEXFILE, db, &db->bt);
+    CU_ASSERT(rc == CHIDB_OK);
+    
+    dbm * test_dbm = init_dbm(db);
+
+    chidb_instruction inst;
+    inst.instruction = DBM_OPENWRITE;
+
+
+
+  
 	//DBM_OPENWRITE
 }
 
@@ -1508,7 +1570,11 @@ void test_9_11(void) {
 }
 
 void test_9_12(void) {
-	//DBM_REWIND
+  
+
+
+
+  //DBM_REWIND
 }
 
 void test_9_13(void) {
