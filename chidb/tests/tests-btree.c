@@ -1263,7 +1263,56 @@ void test_9_3(void) {
     CU_ASSERT(test_dbm->registers[0].data.int_val == 123);
     CU_ASSERT(test_dbm->registers[1].data.int_val == 44);
     reset_assert(test_dbm);
-    
+
+    integer_inst(test_dbm, 21, 4414);
+    integer_inst(test_dbm, 55, 4414);
+    ne_inst(test_dbm, 21, 44, 55);
+    CU_ASSERT(test_dbm->program_counter == 3);
+    reset_assert(test_dbm);
+ 
+    string_inst(test_dbm, 0, "banana\0");
+    string_inst(test_dbm, 1, "banana\0");
+    ne_inst(test_dbm, 0, 42, 1);
+    CU_ASSERT(test_dbm->program_counter == 3);
+    reset_assert(test_dbm);
+
+    string_inst(test_dbm, 0, "banana\0");
+    string_inst(test_dbm, 1, "banerana\0");
+    ne_inst(test_dbm, 0, 44, 1); 
+    CU_ASSERT(test_dbm->program_counter == 44);
+    reset_assert(test_dbm);   
+
+    null_inst(test_dbm, 10);
+	null_inst(test_dbm, 100);
+	ne_inst(test_dbm, 10, 77, 100);
+	CU_ASSERT(test_dbm->program_counter == 3);
+	reset_assert(test_dbm);
+	
+    string_inst(test_dbm,10,"horse\0");
+    null_inst(test_dbm, 100);
+	ne_inst(test_dbm, 100, 77, 10);
+	CU_ASSERT(test_dbm->program_counter == 77);
+	reset_assert(test_dbm);
+		
+    string_inst(test_dbm,10,NULL);
+    null_inst(test_dbm, 100);
+	ne_inst(test_dbm, 10, 77, 100);
+	CU_ASSERT(test_dbm->program_counter == 3);
+	reset_assert(test_dbm);
+		
+    integer_inst(test_dbm,10,1);
+    null_inst(test_dbm, 100);
+	ne_inst(test_dbm, 10, 77, 100);
+	CU_ASSERT(test_dbm->program_counter == 77);
+	reset_assert(test_dbm);
+		
+    integer_inst(test_dbm,10,NULL);
+    null_inst(test_dbm, 100);
+	ne_inst(test_dbm, 100, 77, 10);
+	CU_ASSERT(test_dbm->program_counter == 3);
+	reset_assert(test_dbm);
+	
+
     free(test_dbm);
 }
 
