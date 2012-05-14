@@ -1610,9 +1610,8 @@ void test_9_12(void) {
 	char *course_title = (char *)malloc(sizeof(char) * (*len));
 	CU_ASSERT(chidb_DBRecord_getString(dbr, 1, &(course_title)) == CHIDB_OK);
 	CU_ASSERT(strcmp(course_title, "Programming Languages") == 0);
-	CU_ASSERT(chidb_DBRecord_getInt8(dbr, 2, val8) == CHIDB_OK);
-	printf("VAL8: %i\n", (*val8));
-	CU_ASSERT((*val8) == 75);
+	CU_ASSERT(chidb_DBRecord_getInt32(dbr, 2, val32) == CHIDB_OK);
+	CU_ASSERT((*val32) == 75);
 	CU_ASSERT(chidb_DBRecord_getInt32(dbr, 3, val32) == CHIDB_OK);
 	CU_ASSERT((*val32) == 89);
 	
@@ -1629,9 +1628,8 @@ void test_9_12(void) {
 	char *course_title2 = (char *)malloc(sizeof(char) * (*len));
 	CU_ASSERT(chidb_DBRecord_getString(dbr2, 1, &(course_title2)) == CHIDB_OK);
 	CU_ASSERT(strcmp(course_title2, "Databases") == 0);
-	CU_ASSERT(chidb_DBRecord_getInt8(dbr2, 2, val8) == CHIDB_OK);
-	printf("VAL8: %i\n", (*val8));
-	CU_ASSERT((*val8) == 42);
+	CU_ASSERT(chidb_DBRecord_getInt32(dbr2, 2, val32) == CHIDB_OK);
+	CU_ASSERT((*val32) == 42);
 	
 	free(dbr);
 	free(dbr2);
