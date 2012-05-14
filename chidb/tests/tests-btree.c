@@ -1082,6 +1082,16 @@ void eq_inst(dbm *input_dbm, uint32_t r_num1, uint32_t jump_addr, uint32_t r_num
 	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
 }
 
+void ne_inst(dbm * input_dbm, uint32_t r_num1, uint32_t jump_addr, uint32_t r_num2) {
+    chidb_instruction inst;
+    inst.instruction = DBM_NE;
+    inst.P1 = r_num1;
+	inst.P2 = jump_addr;
+	inst.P3 = r_num2;
+	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
+}
+
+
 void reset_assert(dbm *input_dbm) {
 	CU_ASSERT(reset_dbm(input_dbm) == CHIDB_OK);
 	CU_ASSERT(input_dbm->program_counter == 0);  
@@ -1178,6 +1188,17 @@ void test_9_2(void) {
 }
 void test_9_3(void) {
 	//DBM_NE
+	dbm* test_dbm = init_dbm(NULL);
+
+    integer_inst(test_dbm, 0, 123);
+    integer_inst(test_dbm, 1, 44);
+    ne_inst(test_dbm, 0, 42, 1);
+    CU_ASSERT(test_dbm->program_counter == 42);
+    CU_ASSERT(test_dbm->registers[0].data.int_val == 123);
+    CU_ASSERT(test_dbm->registers[1].data.int_val == 44);
+    reset_assert(test_dbm);
+    
+    free(test_dbm);
 }
 
 void test_9_4(void) {
