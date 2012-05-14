@@ -89,7 +89,7 @@ int reset_dbm(dbm *input_dbm) {
 }
 
 void init_lists(chidb_stmt *stmt) {
-	for (int i = 0; i < stmt->bt->schema_table_size; ++i) {
+	for (int i = 0; i < stmt->db->bt->schema_table_size; ++i) {
 		
 	}
 }
