@@ -509,6 +509,8 @@ int operation_next(dbm *input_dbm, chidb_instruction inst) {
 //DBM_INSERT
 int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
 	if (input_dbm->registers[inst.P2].type == RECORD) {
+        
+        //int retval = chidb_Btree_insertInTable(input_dbm->db->bt, input_dbm->cursors[inst.P1].node->page->npage
 		int retval = chidb_Btree_insertInTable(input_dbm->db->bt, (npage_t)(*(input_dbm->db->bt->schema_table))->root_page, (key_t)input_dbm->registers[inst.P3].data.int_val, input_dbm->registers[inst.P2].data.record_val->data, (uint16_t)input_dbm->registers[inst.P2].data.record_val->data_len);
 		if (retval == CHIDB_EDUPLICATE) {
 			return DBM_DUPLICATE_KEY;
@@ -598,7 +600,6 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			if (retval == DBM_OK) {
 				input_dbm->program_counter += 1;
 				input_dbm->tick_result = DBM_OK;
-				return DBM_OK;
 			} else {
 				input_dbm->tick_result = DBM_OPENRW_ERROR;
 				return DBM_HALT_STATE;
