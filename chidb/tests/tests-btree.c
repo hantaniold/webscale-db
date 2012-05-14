@@ -1422,7 +1422,9 @@ void test_9_7(void) {
 	
 	free(test_dbm);
 }
-
+void test_9_8(void) {
+	//DBM_HALT
+}
 
 int init_tests_btree()
 {
@@ -1499,7 +1501,8 @@ int init_tests_btree()
       (NULL == CU_add_test(dbmTests, "9.4 - DBM_LT", test_9_4)) ||
       (NULL == CU_add_test(dbmTests, "9.5 - DBM_LE", test_9_5)) ||
       (NULL == CU_add_test(dbmTests, "9.6 - DBM_GT", test_9_6)) ||
-      (NULL == CU_add_test(dbmTests, "9.7 - DBM_GE", test_9_7))
+      (NULL == CU_add_test(dbmTests, "9.7 - DBM_GE", test_9_7)) ||
+      (NULL == CU_add_test(dbmTests, "9.8 - DBM_HALT", test_9_8))
       )
     {
       CU_cleanup_registry();
