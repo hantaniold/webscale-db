@@ -1137,10 +1137,23 @@ void ne_inst(dbm * input_dbm, uint32_t r_num1, uint32_t jump_addr, uint32_t r_nu
 	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
 }
 
-
 void reset_assert(dbm *input_dbm) {
 	CU_ASSERT(reset_dbm(input_dbm) == CHIDB_OK);
 	CU_ASSERT(input_dbm->program_counter == 0);  
+}
+
+void halt_inst(dbm *input_dbm, uint32_t error_code, char *error_message) {
+	chidb_instruction inst;
+	inst.instruction = DBM_HALT;
+	inst.P1 = error_code;
+	inst.P4 = error_message;
+	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_HALT_STATE);
+	if (error_code == 0) {
+		CU_ASSERT(input_dbm->tick_result == DBM_OK);
+	} else {
+		CU_ASSERT(input_dbm->tick_result == error_code);
+		CU_ASSERT(strcmp(input_dbm->error_str, error_message) == 0);
+	}
 }
 
 void test_9_1(void)
@@ -1424,6 +1437,13 @@ void test_9_7(void) {
 }
 void test_9_8(void) {
 	//DBM_HALT
+	dbm* test_dbm = init_dbm(NULL);
+	halt_inst(test_dbm, 0, NULL);
+	
+	reset_assert(test_dbm);
+	
+	halt_inst(test_dbm, 1, "Sassy error message.");
+	free(test_dbm);
 }
 
 int init_tests_btree()

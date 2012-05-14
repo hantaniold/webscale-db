@@ -752,6 +752,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			if (inst.P1 == 0) {
 				input_dbm->tick_result = DBM_OK;
 			} else {
+				input_dbm->tick_result = inst.P1;
 				input_dbm->error_str = inst.P4;
 			}
 			return DBM_HALT_STATE;
