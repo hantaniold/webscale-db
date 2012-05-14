@@ -1802,9 +1802,19 @@ void test_9_14(void) {
     //DBM_INSERT
 }
 
+void test_10_1(void) {
+	//chidb_load_schema tests
+	chidb *db;
+  db = malloc(sizeof(chidb));
+  BTree *bt;
+	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
+	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
+	
+}
+
 int init_tests_btree()
 {
-  CU_pSuite openexistingTests, loadnodeTests, createwriteTests, opennewTests, cellTests, findTests, insertnosplitTests, insertTests, indexTests, dbmTests;
+  CU_pSuite openexistingTests, loadnodeTests, createwriteTests, opennewTests, cellTests, findTests, insertnosplitTests, insertTests, indexTests, dbmTests, schemaLoadTests;
   
   /* add suites to the registry */
   if (
@@ -1817,7 +1827,8 @@ int init_tests_btree()
       NULL == (insertnosplitTests = CU_add_suite("Step 6: Insertion into a leaf without splitting", NULL, NULL))	||
       NULL == (insertTests =        CU_add_suite("Step 7: Insertion with splitting", NULL, NULL))	||
       NULL == (indexTests =         CU_add_suite("Step 8: Supporting index B-Trees", NULL, NULL)) ||
-      NULL == (dbmTests = 					CU_add_suite("Step 9: Testing DBM commands", NULL, NULL))
+      NULL == (dbmTests = 					CU_add_suite("Step 9: Testing DBM commands", NULL, NULL)) ||
+      NULL == (schemaLoadTests = 		CU_add_suite("Step 10: Schema loading tests", NULL, NULL))
       ) 
     {
       CU_cleanup_registry();
@@ -1884,7 +1895,9 @@ int init_tests_btree()
       (NULL == CU_add_test(dbmTests, "9.11 - DBM_CLOSE", test_9_11)) ||
       (NULL == CU_add_test(dbmTests, "9.12 - DBM_REWIND", test_9_12)) ||
       (NULL == CU_add_test(dbmTests, "9.13 - DBM_NEXT", test_9_13)) ||
-      (NULL == CU_add_test(dbmTests, "9.14 - DBM_INSERT", test_9_14))
+      (NULL == CU_add_test(dbmTests, "9.14 - DBM_INSERT", test_9_14)) ||
+      /* Schema loading tests */
+      (NULL == CU_add_test(schemaLoadTests, "10.1 - chidb_load_schema", test_10_1))
       )
     {
       CU_cleanup_registry();
