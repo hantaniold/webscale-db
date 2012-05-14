@@ -377,11 +377,17 @@ int operation_integer(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_string(dbm *input_dbm, chidb_instruction inst) {
+	
 	input_dbm->registers[inst.P2].type = STRING;
 	input_dbm->registers[inst.P2].data.str_val = (char *)calloc(inst.P1, sizeof(char));
 	input_dbm->registers[inst.P2].data_len = (size_t)inst.P1;
-	input_dbm->registers[inst.P2].touched = 1;
-	strncpy(input_dbm->registers[inst.P2].data.str_val, inst.P4, (size_t)inst.P1);
+	if (inst.P4 != NULL) {
+		input_dbm->registers[inst.P2].touched = 1;
+		strncpy(input_dbm->registers[inst.P2].data.str_val, inst.P4, (size_t)inst.P1);
+	} else {
+		input_dbm->registers[inst.P2].touched = 1;
+		input_dbm->registers[inst.P2].data.str_val = NULL;
+	}
 	return DBM_OK;
 }
 
