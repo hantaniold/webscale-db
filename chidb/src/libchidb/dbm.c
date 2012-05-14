@@ -494,14 +494,26 @@ int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
 
 int operation_next(dbm *input_dbm, chidb_instruction inst) {
 	if (input_dbm->cursors[inst.P1].cell_num + 1 < input_dbm->cursors[inst.P1].node->n_cells) {
-		ncell_t next = input_dbm->cursors[inst.P1].cell_num + 1;
+		if (input_dbm->cursors[inst.P1].prev_cell == NULL) {
+			input_dbm->cursors[inst.P1].prev_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
+		} 
+		if (input_dbm->cursors[inst.P1].curr_cell == NULL) {
+			input_dbm->cursors[inst.P1].curr_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
+		} 
+		if (input_dbm->cursors[inst.P1].next_cell == NULL) {
+			input_dbm->cursors[inst.P1].next_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
+		} 
+		ncell_t next = (input_dbm->cursors[inst.P1].cell_num + 2);
 		input_dbm->cursors[inst.P1].prev_cell = input_dbm->cursors[inst.P1].curr_cell;
 		input_dbm->cursors[inst.P1].curr_cell = input_dbm->cursors[inst.P1].next_cell;
+		input_dbm->cursors[inst.P1].next_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
 		chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, next, input_dbm->cursors[inst.P1].next_cell);
 		input_dbm->program_counter = inst.P2;
+		input_dbm->cursors[inst.P1].cell_num += 1;
 		return DBM_OK;
 	} else {
 		//do nothing
+		input_dbm->program_counter += 1;
 	}
 	return DBM_OK;
 }
