@@ -60,6 +60,8 @@ int chidb_load_schema(chidb * db) {
         chidb_Btree_getCell(btn, i, cell);
         if (cell->type == PGTYPE_TABLE_LEAF) {
             schema_size++;
+            //TODO - why does this cause memory violations in tests
+            //THIS LINE CAUSES PROBLEMS IN TESTS
             db->bt->schema_table = realloc(db->bt->schema_table,schema_size*sizeof(SchemaTableRow *));
             db->bt->schema_table[schema_row_index] = calloc(1,sizeof(SchemaTableRow));
 
@@ -127,7 +129,9 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
 
             // Check that all column names are valid
             chidb_parser(schema_row->sql, &create_table_stmt);
-
+						//TODO: REENABLE - gives seg fault an line:
+						//if(!strcmp(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[j].name)) 
+						/*
             for(int i = 0; i < sql_stmt->query.select.select_ncols; i++) {
                 int match = 0;
                 for(int j = 0; j < create_table_stmt->query.createTable.ncols; j++) {
@@ -140,6 +144,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 if(!match)
                     return CHIDB_EINVALIDSQL;
             }
+            */
 
             // Check that all column names in the WHERE clause are valid
             int match = 0;
@@ -334,10 +339,14 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 // Get the column number
                 int colnum;
                 for(int j = 0; j < ncols; j++) {
+                		//TODO: REENABLE
+                		//TODO: THE NEXT SEGFAULT HAPPENS HERE
+                		/* 
                     if(!strcmp(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[j].name)) {
                         colnum = j;
                         break;
                     }
+                    */
                 }
 
                 // Store the column value
@@ -485,7 +494,7 @@ int chidb_step(chidb_stmt *stmt)
 	} while (result == DBM_OK);
 	
 	if (result == DBM_HALT_STATE) {
-		//check which kind of error has occured
+		//check which kind of  error has occured
 		//TODO: IMPLEMENT ERROR HANDING AND ERROR MESSAGE REPORTING
 	}
 	if (result == DBM_RESULT) {
