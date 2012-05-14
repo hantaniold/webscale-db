@@ -1048,7 +1048,6 @@ void string_inst(dbm *input_dbm, uint32_t r_num, const char *str) {
 		inst.P4 = str;
 		CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
 		CU_ASSERT(input_dbm->registers[r_num].type == STRING);
-		printf("1051 ERROR: %s\n", input_dbm->registers[r_num].data.str_val);
 		CU_ASSERT(strncmp(input_dbm->registers[r_num].data.str_val, str, input_dbm->registers[r_num].data_len) == 0);
 		CU_ASSERT(input_dbm->program_counter == (old_pc + 1));
 	} else {
