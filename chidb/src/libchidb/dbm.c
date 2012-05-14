@@ -216,6 +216,42 @@ int operation_ne(dbm *input_dbm, chidb_instruction inst) {
 				break;
 		}
 		return DBM_OK;
+    } else if (input_dbm->registers[inst.P1].type == NL || input_dbm->registers[inst.P3].type == NL) {
+        int other_reg;
+        if (input_dbm->registers[inst.P1].type == NL) {
+            other_reg = inst.P3;
+        } else {
+            other_reg = inst.P1;
+        }
+
+
+
+        switch (input_dbm->registers[other_reg].type) {
+            case INTEGER:
+                if (input_dbm->registers[other_reg].data.int_val != NULL) {
+                    input_dbm->program_counter = inst.P2;
+                } else {
+                    input_dbm->program_counter++;
+                }
+                break;
+
+            case STRING:
+				if (input_dbm->registers[other_reg].data.str_val == NULL) {
+                    input_dbm->program_counter++;
+                } else {
+                    input_dbm->program_counter = inst.P2;
+                }
+                break;
+            case NL:
+                input_dbm->program_counter = inst.P2;
+            case BINARY:
+            case RECORD:
+                break;
+
+        }
+        return DBM_OK;
+
+
 	} else {
 		return DBM_REGISTER_TYPE_MISMATCH;
 	}
