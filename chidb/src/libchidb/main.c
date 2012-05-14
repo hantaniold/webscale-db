@@ -71,6 +71,10 @@ int chidb_load_schema(chidb * db) {
             chidb_DBRecord_getString(dbr,2,&db->bt->schema_table[schema_row_index]->assoc_table_name);
             chidb_DBRecord_getInt32(dbr,3,&db->bt->schema_table[schema_row_index]->root_page);
             chidb_DBRecord_getString(dbr,4,&db->bt->schema_table[schema_row_index]->sql);
+            
+            // Compensate for semicolon parser error in CREATE TABLE
+            db->bt->schema_table[schema_row_index]->sql = realloc(db->bt->schema_table[schema_row_index]->sql, strlen(db->bt->schema_table[schema_row_index]->sql) + 2);
+            strcat(db->bt->schema_table[schema_row_index]->sql, ";");
 
             
             schema_row_index++;
@@ -129,9 +133,6 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
 
             // Check that all column names are valid
             chidb_parser(schema_row->sql, &create_table_stmt);
-						//TODO: REENABLE - gives seg fault an line:
-						//if(!strcmp(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[j].name)) 
-						/*
             for(int i = 0; i < sql_stmt->query.select.select_ncols; i++) {
                 int match = 0;
                 for(int j = 0; j < create_table_stmt->query.createTable.ncols; j++) {
@@ -144,7 +145,6 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 if(!match)
                     return CHIDB_EINVALIDSQL;
             }
-            */
 
             // Check that all column names in the WHERE clause are valid
             int match = 0;
