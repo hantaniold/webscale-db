@@ -54,6 +54,7 @@ int chidb_load_schema(chidb * db) {
     BTreeNode * btn;
     BTreeCell * cell = calloc(1,sizeof(BTreeCell));
     chidb_Btree_getNodeByPage(db->bt, 1, &btn);
+    db->bt->schema_table = NULL;
     int schema_size = 0;
     int schema_row_index = 0;
     for (int i = 0; i < btn->n_cells; i++) {
