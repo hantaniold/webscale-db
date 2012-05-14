@@ -1039,16 +1039,26 @@ void string_inst(dbm *input_dbm, uint32_t r_num, const char *str) {
 	chidb_instruction inst;
 	uint32_t old_pc = input_dbm->program_counter;
 	inst.instruction = DBM_STRING;
-	inst.P1 = (uint32_t)strlen(str);
-	char *word = (char *)malloc(inst.P1 * sizeof(char));
-	strncpy(word, str, inst.P1);
-	inst.P2 = r_num;
-	inst.P4 = word;
-	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
-	CU_ASSERT(input_dbm->registers[r_num].type == STRING);
-	CU_ASSERT(strcmp(input_dbm->registers[r_num].data.str_val, word) == 0);
-	CU_ASSERT(input_dbm->program_counter == (old_pc + 1));
-	free(word);
+	if (str != NULL) {
+		inst.P1 = (uint32_t)strlen(str);
+		char *word = (char *)malloc(inst.P1 * sizeof(char));
+		strncpy(word, str, inst.P1);
+		inst.P2 = r_num;
+		inst.P4 = word;
+		CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
+		CU_ASSERT(input_dbm->registers[r_num].type == STRING);
+		CU_ASSERT(strcmp(input_dbm->registers[r_num].data.str_val, word) == 0);
+		CU_ASSERT(input_dbm->program_counter == (old_pc + 1));
+		free(word);
+	} else {
+		inst.P1 = 0;
+		inst.P2 = r_num;
+		inst.P4 = NULL;
+		CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
+		CU_ASSERT(input_dbm->registers[r_num].type == STRING);
+		CU_ASSERT(input_dbm->registers[r_num].data.str_val == NULL);
+		CU_ASSERT(input_dbm->program_counter == (old_pc + 1));
+	}
 }
 
 void integer_inst(dbm *input_dbm, uint32_t r_num, int32_t val) {
@@ -1174,6 +1184,7 @@ void test_9_2(void) {
 	eq_inst(test_dbm, 10, 77, 100);
 	CU_ASSERT(test_dbm->program_counter == 3);
 	reset_assert(test_dbm);
+	
 	free(test_dbm);
 }
 void test_9_3(void) {
