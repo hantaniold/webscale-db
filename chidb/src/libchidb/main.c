@@ -339,14 +339,10 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 // Get the column number
                 int colnum;
                 for(int j = 0; j < ncols; j++) {
-                		//TODO: REENABLE
-                		//TODO: THE NEXT SEGFAULT HAPPENS HERE
-                		/* 
                     if(!strcmp(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[j].name)) {
                         colnum = j;
                         break;
                     }
-                    */
                 }
 
                 // Store the column value
