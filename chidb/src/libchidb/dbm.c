@@ -84,14 +84,14 @@ int reset_dbm(dbm *input_dbm) {
 			operation_cursor_close(input_dbm, i);
 		}
 		input_dbm->cursors[i].touched = 0;
-		/*
-		input_dbm->cursors[i].curr_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
-		input_dbm->cursors[i].next_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
-		input_dbm->cursors[i].prev_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
-		input_dbm->cursors[i].touched = 1;
-		*/
 	}	
 	return CHIDB_OK;
+}
+
+void init_lists(chidb_stmt *stmt) {
+	for (int i = 0; i < stmt->db->bt->schema_table_size; ++i) {
+		
+	}
 }
 
 int operation_eq(dbm *input_dbm, chidb_instruction inst) {

@@ -344,7 +344,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                         break;
                     }
                 }
-
+ 
                 // Store the column value
                 (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
                 (*stmt)->ins[numlines].instruction = DBM_COLUMN;     // Get a column value
@@ -474,6 +474,7 @@ int chidb_step(chidb_stmt *stmt)
 	if (stmt->initialized_dbm == 0) {
 		//dbm needs to be initialized
 		stmt->input_dbm = init_dbm(stmt->db);
+		init_lists(stmt);
         if (stmt->sql->type == STMT_INSERT) {
             for (int i = 0; i < stmt->db->bt->schema_table_size; i++) {
                 if (strcmp(stmt->sql->query.insert.table,stmt->db->bt->schema_table[i]->item_name) == 0) {
