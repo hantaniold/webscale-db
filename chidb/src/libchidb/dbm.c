@@ -443,23 +443,18 @@ int operation_rewind(dbm *input_dbm, chidb_instruction inst) {
 	input_dbm->cursors[inst.P1].touched = 1;
 	
 	input_dbm->cursors[inst.P1].curr_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
+	input_dbm->cursors[inst.P1].next_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
 	
 	int retval = chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, 0, input_dbm->cursors[inst.P1].curr_cell);	
-	
-	/*
 	int retval2 = chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, 1, input_dbm->cursors[inst.P1].next_cell);
 	if (retval2 != CHIDB_OK) {
 		input_dbm->cursors[inst.P1].next_cell = NULL;
 	}
-	*/
-	return DBM_OK;
-	/*
 	if (retval == CHIDB_OK) {
 		return DBM_OK;
 	} else {
 		return DBM_CELL_NUMBER_BOUNDS;
 	}
-	*/
 }
 
 //DBM_MAKERECORD
