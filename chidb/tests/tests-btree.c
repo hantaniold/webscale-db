@@ -1495,6 +1495,26 @@ void test_9_8(void) {
 	free(test_dbm);
 }
 
+void test_9_9(void) {
+	//DBM_OPENREAD
+}
+
+void test_9_10(void) {
+	//DBM_OPENWRITE
+}
+
+void test_9_11(void) {
+	//DBM_CLOSE
+}
+
+void test_9_12(void) {
+	//DBM_REWIND
+}
+
+void test_9_13(void) {
+	//DBM_NEXT
+}
+
 int init_tests_btree()
 {
   CU_pSuite openexistingTests, loadnodeTests, createwriteTests, opennewTests, cellTests, findTests, insertnosplitTests, insertTests, indexTests, dbmTests;
@@ -1571,7 +1591,12 @@ int init_tests_btree()
       (NULL == CU_add_test(dbmTests, "9.5 - DBM_LE", test_9_5)) ||
       (NULL == CU_add_test(dbmTests, "9.6 - DBM_GT", test_9_6)) ||
       (NULL == CU_add_test(dbmTests, "9.7 - DBM_GE", test_9_7)) ||
-      (NULL == CU_add_test(dbmTests, "9.8 - DBM_HALT", test_9_8))
+      (NULL == CU_add_test(dbmTests, "9.8 - DBM_HALT", test_9_8)) ||
+      (NULL == CU_add_test(dbmTests, "9.9 - DBM_OPENREAD", test_9_9)) ||
+      (NULL == CU_add_test(dbmTests, "9.10 - DBM_OPENWRITE", test_9_10)) ||
+      (NULL == CU_add_test(dbmTests, "9.11 - DBM_CLOSE", test_9_11)) ||
+      (NULL == CU_add_test(dbmTests, "9.12 - DBM_REWIND", test_9_12)) ||
+      (NULL == CU_add_test(dbmTests, "9.13 - DBM_NEXT", test_9_13))
       )
     {
       CU_cleanup_registry();
