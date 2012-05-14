@@ -469,6 +469,13 @@ int chidb_step(chidb_stmt *stmt)
 	if (stmt->initialized_dbm == 0) {
 		//dbm needs to be initialized
 		stmt->input_dbm = init_dbm(stmt->db);
+        if (stmt->sql->type == STMT_INSERT) {
+            for (int i = 0; i < stmt->db->bt->schema_table_size; i++) {
+                if (strcmp(stmt->sql->query.insert.table,stmt->db->bt->schema_table[i]->item_name) == 0) {
+                    stmt->input_dbm->table_root = stmt->db->bt->schema_table[i]->root_page;
+                }
+            }
+        }
 		stmt->initialized_dbm = 1;
 	}
 	//INSTRUCTION LOOP
