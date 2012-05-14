@@ -3,6 +3,7 @@
 #include "libchidb/btree.h"
 #include "libchidb/util.h"
 #include "libchidb/dbm.h"
+#include "libchidb/record.h"
 
 #define TESTFILE_1 ("test1.cdb") // String database w/ five pages, single B-Tree
 #define TESTFILE_2 ("test2.cdb") // Corrupt header
@@ -1041,15 +1042,13 @@ void string_inst(dbm *input_dbm, uint32_t r_num, const char *str) {
 	inst.instruction = DBM_STRING;
 	if (str != NULL) {
 		inst.P1 = (uint32_t)strlen(str);
-		char *word = (char *)malloc(inst.P1 * sizeof(char));
-		strncpy(word, str, inst.P1);
 		inst.P2 = r_num;
-		inst.P4 = word;
+		inst.P4 = str;
 		CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
 		CU_ASSERT(input_dbm->registers[r_num].type == STRING);
-		CU_ASSERT(strcmp(input_dbm->registers[r_num].data.str_val, word) == 0);
+		printf("1051 ERROR: %s\n", input_dbm->registers[r_num].data.str_val);
+		CU_ASSERT(strncmp(input_dbm->registers[r_num].data.str_val, str, input_dbm->registers[r_num].data_len) == 0);
 		CU_ASSERT(input_dbm->program_counter == (old_pc + 1));
-		free(word);
 	} else {
 		inst.P1 = 0;
 		inst.P2 = r_num;
@@ -1509,6 +1508,62 @@ void test_9_11(void) {
 
 void test_9_12(void) {
 	//DBM_REWIND
+	chidb *db;
+  db = malloc(sizeof(chidb));
+  BTree *bt;
+	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
+	dbm* test_dbm = init_dbm(db);
+	CU_ASSERT(test_dbm != NULL);
+	
+	integer_inst(test_dbm, 0, 2);
+	
+	chidb_instruction inst;
+	inst.instruction = DBM_OPENREAD;
+	inst.P1 = 0;
+	inst.P2 = 0;
+	inst.P3 = 4;
+	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+	
+	CU_ASSERT(test_dbm->program_counter == 2);
+	inst.instruction = DBM_REWIND;
+	inst.P1 = 0;
+	inst.P2 = 29;
+	
+	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+	/*
+	CU_ASSERT(test_dbm->program_counter == 3);
+	CU_ASSERT(test_dbm->cursors[0].prev_cell == NULL);
+	CU_ASSERT(test_dbm->cursors[0].curr_cell != NULL);
+	CU_ASSERT(test_dbm->cursors[0].curr_cell->type == PGTYPE_TABLE_LEAF);
+	CU_ASSERT(test_dbm->cursors[0].next_cell != NULL);
+	
+	DBRecord *dbr;
+	CU_ASSERT(chidb_DBRecord_unpack(&(dbr), test_dbm->cursors[0].curr_cell->fields.tableLeaf.data) == CHIDB_OK);
+	
+	int8_t *val8 = (int8_t *)malloc(sizeof(int8_t));
+	int32_t *val32 = (int32_t *)malloc(sizeof(int32_t));
+	
+	CU_ASSERT(chidb_DBRecord_getInt32(dbr, 0, val32) == CHIDB_OK);
+	CU_ASSERT((*val32) = 21000);
+	
+	int *len = (int *)malloc(sizeof(int));
+	CU_ASSERT(chidb_DBRecord_getStringLength(dbr, 1, len) == CHIDB_OK);
+	CU_ASSERT((*len) == 31);
+	char *course_title = (char *)malloc(sizeof(char) * (*len));
+	CU_ASSERT(chidb_DBRecord_getString(dbr, 1, &(course_title)) == CHIDB_OK);
+	CU_ASSERT(strcmp(course_title, "Programming Languages") == 0);
+	CU_ASSERT(chidb_DBRecord_getInt8(dbr, 2, val8) == CHIDB_OK);
+	CU_ASSERT((*val8) == 75);
+	CU_ASSERT(chidb_DBRecord_getInt32(dbr, 3, val32) == CHIDB_OK);
+	CU_ASSERT((*val32) == 89);
+	
+	
+	free(val8);
+	free(val32);
+	free(bt);
+	free(db);
+	free(test_dbm);
+	*/
 }
 
 void test_9_13(void) {

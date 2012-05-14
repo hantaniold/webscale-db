@@ -21,32 +21,39 @@ dbm * init_dbm(chidb *db) {
 	}
 	for (int i = 0; i < DBM_MAX_CURSORS; ++i) {
 		input_dbm->cursors[i].touched = 0;
+		input_dbm->cursors[i].node = NULL;
+		input_dbm->cursors[i].curr_cell = NULL;
+		input_dbm->cursors[i].prev_cell = NULL;
+		input_dbm->cursors[i].next_cell = NULL;
 	}
+	reset_dbm(input_dbm);
 	return input_dbm;
 }
 
-//HELPER FUNCTION
-uint32_t dbm_min(uint32_t v1, uint32_t v2) {
-	if (v1 < v2) {
-		return v1;
-	} else {
-		return v2;
-	}
-}
-
 int operation_cursor_close(dbm *input_dbm, uint32_t cursor_id) {
-	dbm_cursor mycursor = input_dbm->cursors[cursor_id];
-	if (mycursor.touched == 1) {
+	if (input_dbm->cursors[cursor_id].touched == 1) {
 			if (chidb_Btree_freeMemNode(input_dbm->db->bt, input_dbm->cursors[cursor_id].node) == CHIDB_OK) {
-				free(mycursor.node);
-				free(mycursor.curr_cell);
-				free(mycursor.prev_cell);
-				free(mycursor.next_cell);
+				if (input_dbm->cursors[cursor_id].node != NULL) {
+					free(input_dbm->cursors[cursor_id].node);
+					input_dbm->cursors[cursor_id].node = NULL;
+				}
+				if (input_dbm->cursors[cursor_id].curr_cell != NULL) {
+					free(input_dbm->cursors[cursor_id].curr_cell);
+					input_dbm->cursors[cursor_id].curr_cell = NULL;
+				}
+				if (input_dbm->cursors[cursor_id].next_cell != NULL) {
+					free(input_dbm->cursors[cursor_id].next_cell);
+					input_dbm->cursors[cursor_id].next_cell = NULL;
+				}
+				if (input_dbm->cursors[cursor_id].prev_cell != NULL) {
+					free(input_dbm->cursors[cursor_id].prev_cell);
+					input_dbm->cursors[cursor_id].prev_cell = NULL;
+				}
 			} else {
 				return DBM_MEMORY_FREE_ERROR;
 			}
 	}
-	mycursor.touched = 0;
+	input_dbm->cursors[cursor_id].touched = 0;
 	return DBM_OK;
 }
 
@@ -57,32 +64,32 @@ int reset_dbm(dbm *input_dbm) {
 	input_dbm->tick_result = DBM_OK;
 	input_dbm->readwritestate = 0;
 	for (int i = 0; i < DBM_MAX_REGISTERS; ++i) {
-		dbm_register myreg = input_dbm->registers[i]; 
-		if (myreg.touched == 1) {
-			if (myreg.type == STRING) {
-				free(myreg.data.str_val);
+		if (input_dbm->registers[i].touched == 1) {
+			if (input_dbm->registers[i].type == STRING && input_dbm->registers[i].data.str_val != NULL) {
+				free(input_dbm->registers[i].data.str_val);
 			}
-			if (myreg.type == BINARY) {
-				free(myreg.data.bin_val);
+			if (input_dbm->registers[i].type == BINARY) {
+				free(input_dbm->registers[i].data.bin_val);
 			}
-			if (myreg.type == RECORD) {
-				chidb_DBRecord_destroy(myreg.data.record_val);
+			if (input_dbm->registers[i].type == RECORD) {
+				chidb_DBRecord_destroy(input_dbm->registers[i].data.record_val);
 			}
 		}
-		myreg.touched = 0;
-		myreg.type = NL;
+		input_dbm->registers[i].touched = 0;
+		input_dbm->registers[i].type = NL;
 	}
 	for (uint32_t i = 0; i < DBM_MAX_CURSORS; ++i) {
 		dbm_cursor mycursor = input_dbm->cursors[i];
 		if (mycursor.touched == 1) {
 			operation_cursor_close(input_dbm, i);
 		}
-		mycursor.touched = 0;
-		mycursor.node = (BTreeNode *)calloc(1, sizeof(BTreeNode));
-		mycursor.curr_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
-		mycursor.next_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
-		mycursor.prev_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
-		mycursor.touched = 1;
+		input_dbm->cursors[i].touched = 0;
+		/*
+		input_dbm->cursors[i].curr_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
+		input_dbm->cursors[i].next_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
+		input_dbm->cursors[i].prev_cell = (BTreeCell *)calloc(1, sizeof(BTreeCell));
+		input_dbm->cursors[i].touched = 1;
+		*/
 	}	
 	return CHIDB_OK;
 }
@@ -404,27 +411,28 @@ int operation_ge(dbm *input_dbm, chidb_instruction inst) {
 int operation_key(dbm *input_dbm, chidb_instruction inst) {
 	input_dbm->registers[inst.P2].type = INTEGER;
 	input_dbm->registers[inst.P2].data.int_val = (uint32_t)input_dbm->cursors[inst.P1].curr_cell->key;
-	input_dbm->registers[inst.P2].touched = 1;
+	input_dbm->registers[inst.P2].touched = 0;
 	return DBM_OK;
 }
 
 int operation_integer(dbm *input_dbm, chidb_instruction inst) {
 	input_dbm->registers[inst.P2].type = INTEGER;
 	input_dbm->registers[inst.P2].data.int_val = inst.P1;
-	input_dbm->registers[inst.P2].touched = 1;
+	input_dbm->registers[inst.P2].touched = 0;
 	return DBM_OK;
 }
 
 int operation_string(dbm *input_dbm, chidb_instruction inst) {
 	
 	input_dbm->registers[inst.P2].type = STRING;
-	input_dbm->registers[inst.P2].data.str_val = (char *)calloc(inst.P1, sizeof(char));
-	input_dbm->registers[inst.P2].data_len = (size_t)inst.P1;
 	if (inst.P4 != NULL) {
+		input_dbm->registers[inst.P2].data.str_val = (char *)malloc(inst.P1 * sizeof(char));
+		input_dbm->registers[inst.P2].data_len = (size_t)inst.P1;
 		input_dbm->registers[inst.P2].touched = 1;
-		strncpy(input_dbm->registers[inst.P2].data.str_val, inst.P4, (size_t)inst.P1);
+		strncpy(input_dbm->registers[inst.P2].data.str_val, inst.P4, input_dbm->registers[inst.P2].data_len);
 	} else {
-		input_dbm->registers[inst.P2].touched = 1;
+		input_dbm->registers[inst.P2].touched = 0;
+		input_dbm->registers[inst.P2].data_len = 0;
 		input_dbm->registers[inst.P2].data.str_val = NULL;
 	}
 	return DBM_OK;
@@ -433,16 +441,25 @@ int operation_string(dbm *input_dbm, chidb_instruction inst) {
 int operation_rewind(dbm *input_dbm, chidb_instruction inst) {
 	input_dbm->cursors[inst.P1].cell_num = 0; 
 	input_dbm->cursors[inst.P1].touched = 1;
+	
+	input_dbm->cursors[inst.P1].curr_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
+	
 	int retval = chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, 0, input_dbm->cursors[inst.P1].curr_cell);	
+	
+	/*
 	int retval2 = chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, 1, input_dbm->cursors[inst.P1].next_cell);
 	if (retval2 != CHIDB_OK) {
 		input_dbm->cursors[inst.P1].next_cell = NULL;
 	}
+	*/
+	return DBM_OK;
+	/*
 	if (retval == CHIDB_OK) {
 		return DBM_OK;
 	} else {
 		return DBM_CELL_NUMBER_BOUNDS;
 	}
+	*/
 }
 
 //DBM_MAKERECORD
