@@ -1504,7 +1504,6 @@ void openread_inst(dbm * input_dbm, uint32_t cursor_nr, uint32_t reg_nr, uint32_
     inst.instruction = DBM_OPENREAD;
     inst.P1 = cursor_nr;
     inst.P2 = reg_nr;
-    input_dbm->registers[inst.P2].data.int_val = page_nr;
    
     int res = tick_dbm(input_dbm, inst);
     if (!is_error) {
@@ -1512,7 +1511,7 @@ void openread_inst(dbm * input_dbm, uint32_t cursor_nr, uint32_t reg_nr, uint32_
         if (res != DBM_OK) return;
         CU_ASSERT(input_dbm->readwritestate == DBM_READ_STATE);
         CU_ASSERT(input_dbm->cursors[cursor_nr].node->page->npage == page_nr);
-        CU_ASSERT(old_pc == input_dbm->program_counter + 1);
+        CU_ASSERT(old_pc == input_dbm->program_counter - 1);
     } else {
         CU_ASSERT(res == DBM_HALT_STATE);
         CU_ASSERT(old_pc == input_dbm->program_counter);
@@ -1525,19 +1524,18 @@ void test_9_9(void) {
 	chidb * db;
     int rc;
 
-    remove(MULTIINDEXFILE);
     db = malloc(sizeof(chidb));
     rc = chidb_Btree_open(MULTIINDEXFILE, db, &db->bt);
     CU_ASSERT(rc == CHIDB_OK);
     
     dbm * test_dbm = init_dbm(db);
 
+    integer_inst(test_dbm, 2, -42);
     openread_inst(test_dbm, 3, 2, -42, 1);
     reset_assert(test_dbm);
 
-    printf("shoop\n");
-    openread_inst(test_dbm, 3, 2, 4, 0);
-    reset_assert(test_dbm);
+    integer_inst(test_dbm, 2, 2);
+    openread_inst(test_dbm, 3, 2, 2, 0);
 
     free(test_dbm);
 }
@@ -1547,7 +1545,6 @@ void test_9_10(void) {
 	chidb * db;
     int rc;
 
-    remove(MULTIINDEXFILE);
     db = malloc(sizeof(chidb));
     BTree * bt;
     rc = chidb_Btree_open(MULTIINDEXFILE, db, &bt);
@@ -1558,10 +1555,7 @@ void test_9_10(void) {
     chidb_instruction inst;
     inst.instruction = DBM_OPENWRITE;
 
-
-
-  
-	//DBM_OPENWRITE
+    free(test_dbm);
 }
 
 void test_9_11(void) {

@@ -588,7 +588,6 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				input_dbm->readwritestate = DBM_READ_STATE;
 			}
 			uint32_t page_num = (input_dbm->registers[inst.P2]).data.int_val;
-            printf("page_num: %d\n",page_num);
 			if (chidb_Btree_getNodeByPage(input_dbm->db->bt, page_num, &(input_dbm->cursors[inst.P1].node)) == CHIDB_OK) {
 			    input_dbm->cursors[inst.P1].touched = 1;
 				input_dbm->tick_result = DBM_OK;
