@@ -1082,56 +1082,87 @@ void eq_inst(dbm *input_dbm, uint32_t r_num1, uint32_t jump_addr, uint32_t r_num
 	CU_ASSERT(tick_dbm(input_dbm, inst) == DBM_OK);
 }
 
+void reset_assert(dbm *input_dbm) {
+	CU_ASSERT(reset_dbm(input_dbm) == CHIDB_OK);
+	CU_ASSERT(input_dbm->program_counter == 0);  
+}
+
 void test_9_1(void)
 {
 	dbm* test_dbm = init_dbm(NULL);
 	printf("\nTest DBM_INTEGER...\n");
 	integer_inst(test_dbm, 10, 21678);
-	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
-	CU_ASSERT(test_dbm->program_counter == 0);  
+	reset_assert(test_dbm);
 	
 	printf("Test DBM_STRING...\n");
 	string_inst(test_dbm, 200, "charles\0");
 	CU_ASSERT(strcmp(test_dbm->registers[200].data.str_val, "ch56les\0") != 0);
-	printf("9.1 str: %c\n", test_dbm->registers[200].data.str_val[0]);
 	CU_ASSERT(strcmp(test_dbm->registers[200].data.str_val, "charles\0") == 0);
-	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
-	CU_ASSERT(test_dbm->program_counter == 0);  
+	reset_assert(test_dbm);
 	
 	printf("Test DBM_NULL...\n");
 	null_inst(test_dbm, 0);
-	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
-	CU_ASSERT(test_dbm->program_counter == 0);  
+	reset_assert(test_dbm);
 	free(test_dbm);
 }
 
 void test_9_2(void) {
+	//DBM_EQ
 	dbm* test_dbm = init_dbm(NULL);
-	printf("\nTest DBM_EQ...\n");
 	string_inst(test_dbm, 100, "charles\0");
 	string_inst(test_dbm, 200, "charles\0");
 	eq_inst(test_dbm, 100, 7, 200);
 	CU_ASSERT(test_dbm->program_counter == 7);
-	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
-	CU_ASSERT(test_dbm->program_counter == 0); 
+	reset_assert(test_dbm);
+	
 	string_inst(test_dbm, 100, "charles\0");
 	string_inst(test_dbm, 200, "bob\0");
 	eq_inst(test_dbm, 100, 7, 200);
 	CU_ASSERT(test_dbm->program_counter == 3);
-	CU_ASSERT(reset_dbm(test_dbm) == CHIDB_OK);
-	CU_ASSERT(test_dbm->program_counter == 0); 
+	reset_assert(test_dbm);
+	
 	string_inst(test_dbm, 100, "charles\0");
 	string_inst(test_dbm, 200, "cHarle1\0");
 	eq_inst(test_dbm, 100, 7, 200);
 	CU_ASSERT(test_dbm->program_counter == 3);
-	printf("\nTest DBM_NE...\n");
-	printf("\nTest DBM_LT...\n");
-	printf("\nTest DBM_LE...\n");
-	printf("\nTest DBM_GT...\n");
-	printf("\nTest DBM_GE...\n");
+	reset_assert(test_dbm);
+	
+	integer_inst(test_dbm, 0, 1234567);
+	integer_inst(test_dbm, 1, 1234567);
+	eq_inst(test_dbm, 0, 77, 1);
+	CU_ASSERT(test_dbm->program_counter == 77);
+	reset_assert(test_dbm);
+	
+	integer_inst(test_dbm, 0, 1234567);
+	integer_inst(test_dbm, 1, -1);
+	eq_inst(test_dbm, 0, 77, 1);
+	CU_ASSERT(test_dbm->program_counter == 3);
+	reset_assert(test_dbm);
+	
+	integer_inst(test_dbm, 0, -1);
+	integer_inst(test_dbm, 1, -1);
+	eq_inst(test_dbm, 0, 77, 1);
+	CU_ASSERT(test_dbm->program_counter == 77);
+	CU_ASSERT(test_dbm->registers[0].data.int_val == -1);
+	reset_assert(test_dbm);
 	free(test_dbm);
 }
+void test_9_3(void) {
+	//DBM_NE
+}
 
+void test_9_4(void) {
+	//DBM_LT
+}
+void test_9_5(void) {
+	//DBM_LE
+}
+void test_9_6(void) {
+	//DBM_GT
+}
+void test_9_7(void) {
+	//DBM_GE
+}
 
 
 int init_tests_btree()
@@ -1211,7 +1242,12 @@ int init_tests_btree()
       (NULL == CU_add_test(indexTests, "8.3", test_8_3)) ||
       /* DBM TESTS */
       (NULL == CU_add_test(dbmTests, "9.1 - DBM_INTEGER, DBM_STRING, and DBM_NULL", test_9_1)) ||
-      (NULL == CU_add_test(dbmTests, "9.2 - DBM_EQ, DBM_NE, DBM_LT, DBM_LE, DBM_GT, and DBM_GE", test_9_2))
+      (NULL == CU_add_test(dbmTests, "9.2 - DBM_EQ", test_9_2)) || 
+      (NULL == CU_add_test(dbmTests, "9.3 - DBM_NE", test_9_3)) ||
+      (NULL == CU_add_test(dbmTests, "9.4 - DBM_LT", test_9_4)) ||
+      (NULL == CU_add_test(dbmTests, "9.5 - DBM_LE", test_9_5)) ||
+      (NULL == CU_add_test(dbmTests, "9.6 - DBM_GT", test_9_6)) ||
+      (NULL == CU_add_test(dbmTests, "9.7 - DBM_GE", test_9_7))
       )
     {
       CU_cleanup_registry();
