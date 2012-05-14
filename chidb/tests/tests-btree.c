@@ -1132,11 +1132,17 @@ void test_9_1(void)
 	integer_inst(test_dbm, 10, 21678);
 	reset_assert(test_dbm);
 	
+	integer_inst(test_dbm, 10, NULL);
+	reset_assert(test_dbm);
+	
 	printf("Test DBM_STRING...\n");
 	string_inst(test_dbm, 200, "charles\0");
 	CU_ASSERT(strcmp(test_dbm->registers[200].data.str_val, "ch56les\0") != 0);
 	CU_ASSERT(strcmp(test_dbm->registers[200].data.str_val, "charles\0") == 0);
 	reset_assert(test_dbm);
+	
+	string_inst(test_dbm, 200, NULL);
+	CU_ASSERT(test_dbm->registers[200].data.str_val == NULL);
 	
 	printf("Test DBM_NULL...\n");
 	null_inst(test_dbm, 0);
