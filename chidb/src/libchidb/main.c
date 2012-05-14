@@ -499,32 +499,7 @@ int chidb_step(chidb_stmt *stmt)
 	}
 	if (result == DBM_RESULT) {
 		//we have a result to put together
-		chidb_instruction curr_inst = *(stmt->ins + stmt->input_dbm->program_counter);
-		uint32_t index = curr_inst.P1;
-		uint32_t bound = index + curr_inst.P2;
-		
-		DBRecordBuffer *dbrb = (DBRecordBuffer *)calloc(1, sizeof(DBRecordBuffer));
-		chidb_DBRecord_create_empty(dbrb, curr_inst.P2);
-		
-		for (; index < bound; ++index) {
-			switch (stmt->input_dbm->registers[index].type) {
-				case INTEGER:
-					chidb_DBRecord_appendInt32(dbrb, stmt->input_dbm->registers[index].data.int_val);
-				break;
-				case STRING:
-					chidb_DBRecord_appendString(dbrb,  stmt->input_dbm->registers[index].data.str_val);
-				break;
-				case NL:
-					chidb_DBRecord_appendNull(dbrb);
-				break;
-				case BINARY:
-				break;
-				case RECORD:
-				break;
-			}
-		}
-		chidb_DBRecord_finalize(dbrb, &(stmt->record));
-		free(dbrb);
+		generate_result_row(stmt);
 	}
 	return CHIDB_OK;
 }

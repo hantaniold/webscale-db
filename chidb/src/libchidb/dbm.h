@@ -137,4 +137,6 @@ int reset_dbm(dbm *);
 //INCREMENTS THE PROGRAM COUNTER BY ONE IF NO JUMP OCCURS
 int tick_dbm(dbm *input_dbm, chidb_instruction stmt);
 
+int generate_result_row(chidb_stmt *stmt);
+
 

@@ -1798,9 +1798,52 @@ void test_9_13(void) {
 }
 
 void test_9_14(void) {
-
     //DBM_INSERT
 }
+/*
+struct chidb_stmt {
+    chidb_instruction *ins;
+    int num_instructions;
+    DBRecord *record;
+    chidb *db;
+    SQLStatement *sql;
+    uint8_t initialized_dbm;
+    dbm *input_dbm;
+};
+
+*/
+void test_9_15(void) {
+	//DBM_RESULTROW
+	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+	stmt->input_dbm = init_dbm(NULL);
+	stmt->ins = (chidb_instruction *)malloc(10 * sizeof(chidb_instruction));
+	stmt->ins[4].instruction = DBM_RESULTROW;
+	stmt->ins[4].P1 = 0;
+	stmt->ins[4].P2 = 4;
+	integer_inst(stmt->input_dbm, 0, 21678);
+	integer_inst(stmt->input_dbm, 1, 2);
+	string_inst(stmt->input_dbm, 2, "banana\0");
+	integer_inst(stmt->input_dbm, 3, 56);
+	CU_ASSERT(stmt->input_dbm->program_counter == 4);
+	CU_ASSERT(tick_dbm(stmt->input_dbm, stmt->ins[stmt->input_dbm->program_counter]) == DBM_RESULT);
+	CU_ASSERT(generate_result_row(stmt) == CHIDB_OK);
+	
+	int32_t *v32 = (int32_t *)malloc(sizeof(int32_t));
+	char *str = (char*)malloc(sizeof(char) * 100);
+	CU_ASSERT(chidb_DBRecord_getInt32(stmt->record, 0, v32) == CHIDB_OK);
+	CU_ASSERT((*v32) = 21678);
+	CU_ASSERT(chidb_DBRecord_getInt32(stmt->record, 1, v32) == CHIDB_OK);
+	CU_ASSERT((*v32) = 2);
+	CU_ASSERT(chidb_DBRecord_getString(stmt->record, 2, &(str)) == CHIDB_OK);
+	CU_ASSERT(strcmp(str, "banana\0") == 0);
+	CU_ASSERT(chidb_DBRecord_getInt32(stmt->record, 3, v32) == CHIDB_OK);
+	CU_ASSERT((*v32) = 56);
+	
+	free(v32);
+	free(str);
+	free(stmt);
+}
+
 
 void test_10_1(void) {
 	//chidb_load_schema tests
@@ -1896,6 +1939,7 @@ int init_tests_btree()
       (NULL == CU_add_test(dbmTests, "9.12 - DBM_REWIND", test_9_12)) ||
       (NULL == CU_add_test(dbmTests, "9.13 - DBM_NEXT", test_9_13)) ||
       (NULL == CU_add_test(dbmTests, "9.14 - DBM_INSERT", test_9_14)) ||
+      (NULL == CU_add_test(dbmTests, "9.15 - DBM_RESULTROW", test_9_15)) ||
       /* Schema loading tests */
       (NULL == CU_add_test(schemaLoadTests, "10.1 - chidb_load_schema", test_10_1))
       )

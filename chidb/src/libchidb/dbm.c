@@ -493,6 +493,9 @@ int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_next(dbm *input_dbm, chidb_instruction inst) {
+	/*
+	*  TODO - TRAVERSE NODES NOT JUST CELLS
+	*/
 	if (input_dbm->cursors[inst.P1].cell_num + 1 < input_dbm->cursors[inst.P1].node->n_cells) {
 		if (input_dbm->cursors[inst.P1].prev_cell == NULL) {
 			input_dbm->cursors[inst.P1].prev_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
@@ -821,5 +824,39 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 	}
 	return DBM_INVALID_INSTRUCTION;
 } //END OF tick_dbm
+
+
+int generate_result_row(chidb_stmt *stmt) {
+	chidb_instruction curr_inst = *(stmt->ins + stmt->input_dbm->program_counter);
+	uint32_t index = curr_inst.P1;
+	uint32_t bound = index + curr_inst.P2;
+	
+	DBRecordBuffer *dbrb = (DBRecordBuffer *)calloc(1, sizeof(DBRecordBuffer));
+	chidb_DBRecord_create_empty(dbrb, curr_inst.P2);
+		
+	for (; index < bound; ++index) {
+		switch (stmt->input_dbm->registers[index].type) {
+			case INTEGER:
+				chidb_DBRecord_appendInt32(dbrb, stmt->input_dbm->registers[index].data.int_val);
+			break;
+			case STRING:
+				chidb_DBRecord_appendString(dbrb,  stmt->input_dbm->registers[index].data.str_val);
+			break;
+			case NL:
+				chidb_DBRecord_appendNull(dbrb);
+			break;
+			case BINARY:
+			break;
+			case RECORD:
+			break;
+		}
+	}
+	chidb_DBRecord_finalize(dbrb, &(stmt->record));
+	free(dbrb);
+	return CHIDB_OK;
+}
+
+
+
 
 //EOF
