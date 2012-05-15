@@ -55,6 +55,7 @@
 #define DBM_GT (21)
 #define DBM_GE (22)
 #define DBM_IDXGT (23)
+#define DBM_IDXGE (32)
 #define DBM_IDXLT (24)
 #define DBM_IDXLE (25)
 #define DBM_IDXKEY (26)
