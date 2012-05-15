@@ -272,6 +272,9 @@ int operation_eq(dbm *input_dbm, chidb_instruction inst) {
 	}
 }
 int operation_ne(dbm *input_dbm, chidb_instruction inst) {
+    printf("REG NUM 1: %i | REG NUM 2: %i\n", inst.P1, inst.P3);
+    printf("REG TYPE 1: %i | REG TYPE 2: %i\n", input_dbm->registers[inst.P1].type, input_dbm->registers[inst.P3].type);
+    printf("REG VAL 1: %i | REG VAL 2 %i\n", input_dbm->registers[inst.P1].data.int_val, input_dbm->registers[inst.P3].data.int_val);
 	if (input_dbm->registers[inst.P1].type == input_dbm->registers[inst.P3].type) {
 		switch (input_dbm->registers[inst.P1].type) {
 			case INTEGER:
@@ -840,7 +843,7 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 			int32_t *v = (int32_t *)malloc(sizeof(int32_t));
 			chidb_DBRecord_getInt32(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
-			printf("INTEGER VALUE %i\n", *v);
+			printf("INTEGER VALUE %i stored in register %i\n", *v, inst.P3);
 			free(v);
 		}
 		input_dbm->program_counter += 1;
