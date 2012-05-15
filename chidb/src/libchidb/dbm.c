@@ -96,16 +96,16 @@ int reset_dbm(dbm *input_dbm) {
 
 void add_nodes(chidb_stmt *stmt, int table_num, BTreeNode *node) {
 	if (node->type == PGTYPE_TABLE_LEAF || node->type == PGTYPE_INDEX_LEAF) {
-		printf("TABLE NUM: %i\n", table_num);
+		//printf("TABLE NUM: %i\n", table_num);
 		uint32_t start = *(stmt->input_dbm->list_lengths + table_num);
 		*(stmt->input_dbm->list_lengths + table_num) += node->n_cells;
-		printf("MY VAL: %i\n", *(stmt->input_dbm->list_lengths + table_num));
+		//printf("MY VAL: %i\n", *(stmt->input_dbm->list_lengths + table_num));
 		*(stmt->input_dbm->cell_lists + table_num) = realloc(*(stmt->input_dbm->cell_lists + table_num), sizeof(BTreeCell *) * *(stmt->input_dbm->list_lengths + table_num));
-		printf("REALLOC VAL: %i\n", *(stmt->input_dbm->cell_lists + table_num));
+		//printf("REALLOC VAL: %i\n", *(stmt->input_dbm->cell_lists + table_num));
 		uint32_t end = *(stmt->input_dbm->list_lengths + table_num);
 		int ecounter = 0;
-		printf("START: %i\n", start);
-		printf("END: %i\n", end);
+		//printf("START: %i\n", start);
+		//printf("END: %i\n", end);
 		for (int i = start; i < end; ++i) {
 			*(*(stmt->input_dbm->cell_lists + table_num) + i) = (BTreeCell *)malloc(sizeof(BTreeCell));
 			chidb_Btree_getCell(node, (ncell_t)ecounter, *(*(stmt->input_dbm->cell_lists + table_num) + i));
@@ -128,17 +128,23 @@ void recursive_construct(chidb_stmt *stmt, BTree * bt, npage_t page_num, int tab
 			BTreeCell *curr = (BTreeCell *)malloc(sizeof(BTreeCell));
 			chidb_Btree_getCell(root_node, (ncell_t)j, curr);
 			npage_t child_page = curr->fields.tableInternal.child_page;
-			recursive_construct(stmt, root_node, child_page, table_num);
+			recursive_construct(stmt, bt, child_page, table_num);
 			free(curr);
+		}
+		if (root_node->right_page != NULL) {
+			recursive_construct(stmt, bt, root_node->right_page, table_num);
 		}
 	} else if (root_node->type == PGTYPE_INDEX_INTERNAL) {
 		int n_cells = root_node->n_cells;
 		for (int j = 0; j < n_cells; ++j) {
 			BTreeCell *curr = (BTreeCell *)malloc(sizeof(BTreeCell));
 			chidb_Btree_getCell(root_node, (ncell_t)j, curr);
-			npage_t child_page = curr->fields.indexInternal.child_page;
-			recursive_construct(stmt, root_node, child_page, table_num);
+			npage_t child_page = curr->fields.tableInternal.child_page;
+			recursive_construct(stmt, bt, child_page, table_num);
 			free(curr);
+		}
+		if (root_node->right_page != NULL) {
+			recursive_construct(stmt, bt, root_node->right_page, table_num);
 		}
 	} else {
 		add_nodes(stmt, table_num, root_node);
@@ -148,35 +154,41 @@ void recursive_construct(chidb_stmt *stmt, BTree * bt, npage_t page_num, int tab
 
 void init_lists(chidb_stmt *stmt) {
 	stmt->input_dbm->cell_lists = (BTreeCell ***)malloc(sizeof(BTreeCell **) * stmt->db->bt->schema_table_size);
-	printf("SCHEMA TABLE SIZE: %i\n", stmt->db->bt->schema_table_size);
+	//printf("SCHEMA TABLE SIZE: %i\n", stmt->db->bt->schema_table_size);
 	stmt->input_dbm->list_lengths = (uint32_t *)malloc(sizeof(uint32_t) * stmt->db->bt->schema_table_size);
 	for (int i = 0; i < stmt->db->bt->schema_table_size; ++i) {
+		//printf("I VALUE FOR LOOP: %i\n", i);
 		*(stmt->input_dbm->cell_lists + i) = NULL;
 		*(stmt->input_dbm->list_lengths + i) = 0;
 		int root_page_num = stmt->db->bt->schema_table[i]->root_page;
 		BTreeNode *root_node;
-		printf("LOADING PAGE: %i\n", root_page_num);
 		chidb_Btree_getNodeByPage(stmt->db->bt, root_page_num, &(root_node));
+		//printf("LOADING PAGE: %i with type %i\n", root_page_num, root_node->type);
 		if (root_node->type == PGTYPE_TABLE_INTERNAL) {
+			//printf("INTERNAL CELL\n");
 			int n_cells = root_node->n_cells;
 			for (int j = 0; j < n_cells; ++j) {
 				BTreeCell *curr = (BTreeCell *)malloc(sizeof(BTreeCell));
 				chidb_Btree_getCell(root_node, (ncell_t)j, curr);
 				npage_t child_page = curr->fields.tableInternal.child_page;
-				recursive_construct(stmt, root_node, child_page, i);
+				recursive_construct(stmt, stmt->db->bt, child_page, i);
 				free(curr);
 			}
+			if (root_node->right_page != NULL) {
+				recursive_construct(stmt, stmt->db->bt, root_node->right_page, i);
+			}
 		} else if (root_node->type == PGTYPE_INDEX_INTERNAL) {
-		/*
 			int n_cells = root_node->n_cells;
 			for (int j = 0; j < n_cells; ++j) {
 				BTreeCell *curr = (BTreeCell *)malloc(sizeof(BTreeCell));
 				chidb_Btree_getCell(root_node, (ncell_t)j, curr);
-				npage_t child_page = curr->fields.indexInternal.child_page;
-				recursive_construct(stmt, root_node, child_page, i);
+				npage_t child_page = curr->fields.tableInternal.child_page;
+				recursive_construct(stmt, stmt->db->bt, child_page, i);
 				free(curr);
 			}
-		*/
+			if (root_node->right_page != NULL) {
+				recursive_construct(stmt, stmt->db->bt, root_node->right_page, i);
+			}
 		} else {
 			//PGTYPE_TABLE_LEAF
 			add_nodes(stmt, i, root_node);

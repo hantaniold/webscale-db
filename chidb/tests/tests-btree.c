@@ -1878,6 +1878,7 @@ void test_10_2(void) {
 	//init_lists(stmt);
 	
 	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
+	CU_ASSERT(*(stmt->input_dbm->list_lengths) == 3);
 	
 	free(bt);
 	free(db);
@@ -1898,9 +1899,9 @@ void test_10_3(void) {
 	dbm* test_dbm = init_dbm(stmt,1);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
-	init_lists(stmt);
-	
-	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
+	CU_ASSERT(*(stmt->input_dbm->list_lengths + 0) == 2048);
+	CU_ASSERT(stmt->input_dbm->cell_lists[0][0]->key == 8);
+	CU_ASSERT(stmt->input_dbm->cell_lists[0][2047]->key == 9995);
 	
 	free(bt);
 	free(db);
