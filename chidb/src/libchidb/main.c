@@ -499,6 +499,7 @@ int chidb_step(chidb_stmt *stmt)
 	if (result == DBM_RESULT) {
 		//we have a result to put together
 		generate_result_row(stmt);
+		
 		return CHIDB_ROW;
 	}
 }

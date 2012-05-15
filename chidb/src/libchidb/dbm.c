@@ -734,9 +734,11 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 	DBRecord *record;
 	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
 	uint32_t pos = input_dbm->cursors[inst.P1].pos;
-	input_dbm->registers[inst.P2].data.int_val = (int32_t)input_dbm->cell_lists[table_num][pos]->key;
+	//input_dbm->registers[inst.P2].data.int_val = (int32_t)input_dbm->cell_lists[table_num][pos]->key;
 	chidb_DBRecord_unpack(&(record), input_dbm->cell_lists[table_num][pos]->fields.tableLeaf.data);
+	
 	int type = chidb_DBRecord_getType(record, inst.P2);
+	printf("SELECTING COLUMN NUMBER %i with type %i\n", inst.P2, type);
 	if (type == SQL_NULL) {
 		//printf("USING NL VALUE\n");
 		input_dbm->registers[inst.P3].type = NL;
@@ -752,6 +754,7 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 			int8_t *v = (int8_t *)malloc(sizeof(int8_t));
 			chidb_DBRecord_getInt8(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
+			printf("INTEGER VALUE %i\n", *v);
 			free(v);
 		}
 		if (type == SQL_INTEGER_2BYTE) {
@@ -759,6 +762,7 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 			int16_t *v = (int16_t *)malloc(sizeof(int16_t));
 			chidb_DBRecord_getInt16(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
+			printf("INTEGER VALUE %i\n", *v);
 			free(v);
 		}
 		if (type == SQL_INTEGER_4BYTE) {
@@ -766,6 +770,7 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 			int32_t *v = (int32_t *)malloc(sizeof(int32_t));
 			chidb_DBRecord_getInt32(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
+			printf("INTEGER VALUE %i\n", *v);
 			free(v);
 		}
 		input_dbm->program_counter += 1;
@@ -778,7 +783,7 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 		input_dbm->registers[inst.P3].data.str_val = (char *)malloc((*len) * sizeof(char));
 		chidb_DBRecord_getString(record, inst.P2, &(input_dbm->registers[inst.P3].data.str_val));
 		input_dbm->registers[inst.P3].data_len = (size_t)(*len);
-		printf("STRING VALUE %s\n", input_dbm->registers[inst.P3].data.str_val);
+		printf("STRING VALUE %s places in register %in", input_dbm->registers[inst.P3].data.str_val, inst.P3);
 		free(len);
 		input_dbm->program_counter += 1;
 		return DBM_OK;
@@ -896,6 +901,8 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 		}
 		case DBM_RESULTROW: {
 			input_dbm->tick_result = DBM_OK;
+			printf("RESULT ROW COMMAND P1 %i\n", inst.P1);
+			printf("RESULT ROW COMMAND P2 %i\n", inst.P2);
 			return DBM_RESULT;
 		}
 		case DBM_MAKERECORD: {
@@ -1088,6 +1095,9 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 
 int generate_result_row(chidb_stmt *stmt) {
 	chidb_instruction curr_inst = *(stmt->ins + stmt->input_dbm->program_counter);
+	chidb_instruction next_inst = *(stmt->ins + stmt->input_dbm->program_counter + 1);
+	printf("CURR_INST P1: %i\n", curr_inst.P1);
+	printf("NEXT_INST P1: %i\n", next_inst.P1);
 	uint32_t index = curr_inst.P1;
 	uint32_t bound = index + curr_inst.P2;
 	
@@ -1095,6 +1105,7 @@ int generate_result_row(chidb_stmt *stmt) {
 	chidb_DBRecord_create_empty(dbrb, curr_inst.P2);
 		
 	for (; index < bound; ++index) {
+		printf("REGISTER %i TYPE: %i\n", index, stmt->input_dbm->registers[index].type);
 		switch (stmt->input_dbm->registers[index].type) {
 			case INTEGER:
 				chidb_DBRecord_appendInt32(dbrb, stmt->input_dbm->registers[index].data.int_val);
@@ -1112,6 +1123,7 @@ int generate_result_row(chidb_stmt *stmt) {
 			break;
 		}
 	}
+	printf("\n");
 	chidb_DBRecord_finalize(dbrb, &(stmt->record));
 	stmt->input_dbm->program_counter += 1;
 	//free(dbrb);
