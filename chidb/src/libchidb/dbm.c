@@ -112,10 +112,12 @@ void add_nodes(chidb_stmt *stmt, int table_num, BTreeNode *node) {
 			ecounter += 1;	
 		}
 	} else {
+		/*
 		printf("INVALID TYPE ERROR IN add_nodes\n");
 		printf("INVALID TYPE OF: %i\n", node->type);
 		printf("INVALID table_num: %i\n", table_num);
 		printf("INVALID node ref: %i\n", node);
+		*/
 	}
 }
 
@@ -156,6 +158,7 @@ void init_lists(chidb_stmt *stmt) {
 	stmt->input_dbm->cell_lists = (BTreeCell ***)malloc(sizeof(BTreeCell **) * stmt->db->bt->schema_table_size);
 	//printf("SCHEMA TABLE SIZE: %i\n", stmt->db->bt->schema_table_size);
 	stmt->input_dbm->list_lengths = (uint32_t *)malloc(sizeof(uint32_t) * stmt->db->bt->schema_table_size);
+	stmt->input_dbm->num_lists = stmt->db->bt->schema_table_size; 
 	for (int i = 0; i < stmt->db->bt->schema_table_size; ++i) {
 		//printf("I VALUE FOR LOOP: %i\n", i);
 		*(stmt->input_dbm->cell_lists + i) = NULL;
@@ -683,29 +686,10 @@ int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_next(dbm *input_dbm, chidb_instruction inst) {
-	/*
-	*  TODO - TRAVERSE NODES NOT JUST CELLS
-	*/
-	if (input_dbm->cursors[inst.P1].cell_num + 1 < input_dbm->cursors[inst.P1].node->n_cells) {
-		if (input_dbm->cursors[inst.P1].prev_cell == NULL) {
-			input_dbm->cursors[inst.P1].prev_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
-		} 
-		if (input_dbm->cursors[inst.P1].curr_cell == NULL) {
-			input_dbm->cursors[inst.P1].curr_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
-		} 
-		if (input_dbm->cursors[inst.P1].next_cell == NULL) {
-			input_dbm->cursors[inst.P1].next_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
-		} 
-		ncell_t next = (input_dbm->cursors[inst.P1].cell_num + 2);
-		input_dbm->cursors[inst.P1].prev_cell = input_dbm->cursors[inst.P1].curr_cell;
-		input_dbm->cursors[inst.P1].curr_cell = input_dbm->cursors[inst.P1].next_cell;
-		input_dbm->cursors[inst.P1].next_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
-		chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, next, input_dbm->cursors[inst.P1].next_cell);
+	if ((input_dbm->cursors[inst.P1].pos + 1) < *(input_dbm->list_lengths + input_dbm->cursors[inst.P1].table_num)) {
+		input_dbm->cursors[inst.P1].pos += 1;
 		input_dbm->program_counter = inst.P2;
-		input_dbm->cursors[inst.P1].cell_num += 1;
-		return DBM_OK;
 	} else {
-		//do nothing
 		input_dbm->program_counter += 1;
 	}
 	return DBM_OK;

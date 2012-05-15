@@ -1646,162 +1646,69 @@ void test_9_12(void) {
 
 void test_9_13(void) {
 	//DBM_NEXT
+		//DBM_REWIND
 	chidb *db;
   db = malloc(sizeof(chidb));
   BTree *bt;
 	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
-	
+	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
-  stmt->db = db;
-	
-	dbm* test_dbm = init_dbm(stmt, 0);
+	stmt->db = db;
+	dbm* test_dbm = init_dbm(stmt, 1);
 	CU_ASSERT(test_dbm != NULL);
+	stmt->input_dbm = test_dbm;
+	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
+	CU_ASSERT(*(stmt->input_dbm->list_lengths) == 3);
 	
-	integer_inst(test_dbm, 0, 2);
-	
+	integer_inst(test_dbm, 1, 2);
 	chidb_instruction inst;
-	inst.instruction = DBM_OPENREAD;
-	inst.P1 = 0;
-	inst.P2 = 0;
-	inst.P3 = 4;
-	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
-	
-	CU_ASSERT(test_dbm->program_counter == 2);
-	inst.instruction = DBM_REWIND;
-	inst.P1 = 0;
-	inst.P2 = 29;
-	
-	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
-	
-	CU_ASSERT(test_dbm->program_counter == 3);
-	CU_ASSERT(test_dbm->cursors[0].prev_cell == NULL);
-	CU_ASSERT(test_dbm->cursors[0].curr_cell != NULL);
-	CU_ASSERT(test_dbm->cursors[0].curr_cell->type == PGTYPE_TABLE_LEAF);
-	CU_ASSERT(test_dbm->cursors[0].next_cell != NULL);
-	
-	
-	DBRecord *dbr;
-	CU_ASSERT(chidb_DBRecord_unpack(&(dbr), test_dbm->cursors[0].curr_cell->fields.tableLeaf.data) == CHIDB_OK);
-	
-	int8_t *val8 = (int8_t *)malloc(sizeof(int8_t));
-	int16_t *val16 = (int16_t *)malloc(sizeof(int16_t));
-	int32_t *val32 = (int32_t *)malloc(sizeof(int32_t));
-	
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr, 0, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) = 21000);
-	
-	int *len = (int *)malloc(sizeof(int));
-	CU_ASSERT(chidb_DBRecord_getStringLength(dbr, 1, len) == CHIDB_OK);
-	CU_ASSERT((*len) == 21);
-	char *course_title = (char *)malloc(sizeof(char) * (*len));
-	CU_ASSERT(chidb_DBRecord_getString(dbr, 1, &(course_title)) == CHIDB_OK);
-	CU_ASSERT(strcmp(course_title, "Programming Languages") == 0);
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr, 2, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) == 75);
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr, 3, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) == 89);
-	
-	DBRecord *dbr2;
-	
-	CU_ASSERT(chidb_DBRecord_unpack(&(dbr2), test_dbm->cursors[0].next_cell->fields.tableLeaf.data) == CHIDB_OK);
-	
-	
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr2, 0, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) = 23500);
-	
-	CU_ASSERT(chidb_DBRecord_getStringLength(dbr2, 1, len) == CHIDB_OK);
-	CU_ASSERT((*len) == 9);
-	char *course_title2 = (char *)malloc(sizeof(char) * (*len));
-	CU_ASSERT(chidb_DBRecord_getString(dbr2, 1, &(course_title2)) == CHIDB_OK);
-	CU_ASSERT(strcmp(course_title2, "Databases") == 0);
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr2, 2, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) == 42);
-	
-	inst.instruction = DBM_NEXT;
-	inst.P1 = 0;
-	inst.P2 = 45;
-	
-	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
-	
-		DBRecord *dbr3;
-	CU_ASSERT(chidb_DBRecord_unpack(&(dbr3), test_dbm->cursors[0].prev_cell->fields.tableLeaf.data) == CHIDB_OK);
-	
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr3, 0, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) = 21000);
-	
-	CU_ASSERT(chidb_DBRecord_getStringLength(dbr3, 1, len) == CHIDB_OK);
-	CU_ASSERT((*len) == 21);
-	char *course_title3 = (char *)malloc(sizeof(char) * (*len));
-	CU_ASSERT(chidb_DBRecord_getString(dbr3, 1, &(course_title3)) == CHIDB_OK);
-	CU_ASSERT(strcmp(course_title3, "Programming Languages") == 0);
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr3, 2, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) == 75);
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr3, 3, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) == 89);
-	
-	DBRecord *dbr4;
-	
-	CU_ASSERT(chidb_DBRecord_unpack(&(dbr4), test_dbm->cursors[0].curr_cell->fields.tableLeaf.data) == CHIDB_OK);
-	
-	
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr4, 0, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) = 23500);
-	
-	CU_ASSERT(chidb_DBRecord_getStringLength(dbr4, 1, len) == CHIDB_OK);
-	CU_ASSERT((*len) == 9);
-	char *course_title4 = (char *)malloc(sizeof(char) * (*len));
-	CU_ASSERT(chidb_DBRecord_getString(dbr4, 1, &(course_title4)) == CHIDB_OK);
-	CU_ASSERT(strcmp(course_title4, "Databases") == 0);
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr4, 2, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) == 42);
-	
-	DBRecord *dbr5;
-	
-	CU_ASSERT(chidb_DBRecord_unpack(&(dbr5), test_dbm->cursors[0].next_cell->fields.tableLeaf.data) == CHIDB_OK);
-	
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr5, 0, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) = 27500);
-	
-	CU_ASSERT(chidb_DBRecord_getStringLength(dbr5, 1, len) == CHIDB_OK);
-	CU_ASSERT((*len) == 17);
-	char *course_title5 = (char *)malloc(sizeof(char) * (*len));
-	CU_ASSERT(chidb_DBRecord_getString(dbr5, 1, &(course_title5)) == CHIDB_OK);
-	CU_ASSERT(strcmp(course_title5, "Operating Systems") == 0);
-	CU_ASSERT(chidb_DBRecord_getInt32(dbr5, 2, val32) == CHIDB_OK);
-	CU_ASSERT((*val32) == 89);
-	
-	CU_ASSERT(test_dbm->program_counter == 45);
-	
-	inst.instruction = DBM_NEXT;
-	inst.P1 = 0;
-	inst.P2 = 2;
-	
-	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
-	CU_ASSERT(test_dbm->program_counter == 2);
-	
-	inst.instruction = DBM_NEXT;
-	inst.P1 = 0;
-	inst.P2 = 45;
-	
-	CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
-	CU_ASSERT(test_dbm->program_counter == 3);
-	
-	free(dbr);
-	free(dbr2);
-	free(dbr3);
-	free(dbr4);
-	free(dbr5);
-	free(course_title);
-	free(course_title2);
-	free(course_title3);
-	free(course_title4);
-	free(course_title5);
-	free(val8);
-	free(val16);
-	free(val32);
+  int old_pc = test_dbm->program_counter;
+  inst.instruction = DBM_OPENREAD;
+  inst.P1 = 0;
+  inst.P2 = 1;
+  inst.P3 = 4;
+   
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+
+  CU_ASSERT(test_dbm->readwritestate == DBM_READ_STATE);
+  CU_ASSERT(test_dbm->cursors[0].table_num == 0);
+  CU_ASSERT(old_pc == test_dbm->program_counter - 1);
+  
+  inst.instruction = DBM_REWIND;
+  inst.P1 = 0;
+  inst.P2 = 678;
+  
+  old_pc = test_dbm->program_counter;
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == (old_pc + 1));
+  
+  inst.instruction = DBM_NEXT;
+  inst.P1 = 0;
+  inst.P2 = 499;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 499);
+  CU_ASSERT(test_dbm->cursors[0].pos == 1);
+  
+  inst.instruction = DBM_NEXT;
+  inst.P1 = 0;
+  inst.P2 = 524;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 524);
+  CU_ASSERT(test_dbm->cursors[0].pos == 2);
+  
+  inst.instruction = DBM_NEXT;
+  inst.P1 = 0;
+  inst.P2 = 524;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 525);
+  CU_ASSERT(test_dbm->cursors[0].pos == 2);
+  
 	free(bt);
 	free(db);
-	free(test_dbm);
+	free(stmt);
 }
 
 void test_9_14(void) {
