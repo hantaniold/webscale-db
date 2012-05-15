@@ -1013,6 +1013,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			}
 			break;
 		}
+		
 		case DBM_IDXGT: {
 			int retval = operation_idxgt(input_dbm, inst);
 			if (retval == DBM_OK) {
@@ -1023,7 +1024,8 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
-        }
+    }
+    
 		case DBM_IDXGE: {
 			int retval = operation_idxge(input_dbm, inst);
 			if (retval == DBM_OK) {
@@ -1034,7 +1036,8 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
-        }
+    }
+    
 		case DBM_IDXLT: {
 			int retval = operation_idxlt(input_dbm, inst);
 			if (retval == DBM_OK) {
@@ -1045,7 +1048,8 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
-        }
+    }
+    
 		case DBM_IDXLE: {
 			int retval = operation_idxle(input_dbm, inst);
 			if (retval == DBM_OK) {
@@ -1057,6 +1061,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			}
 			break;
         }
+    
 		case DBM_IDXKEY: {
 			int retval = operation_idxkey(input_dbm, inst);
 			if (retval == DBM_OK) {
@@ -1067,6 +1072,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
+		}
 		case DBM_IDXINSERT: {
 			int retval = operation_idxinsert(input_dbm, inst);
 			if (retval == DBM_OK) {
@@ -1101,10 +1107,10 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				input_dbm->error_str = inst.P4;
 			}
 			return DBM_HALT_STATE;
+		break;
 	}
 	return DBM_INVALID_INSTRUCTION;
 } //END OF tick_dbm
-
 
 int generate_result_row(chidb_stmt *stmt) {
 	chidb_instruction curr_inst = *(stmt->ins + stmt->input_dbm->program_counter);
@@ -1135,8 +1141,4 @@ int generate_result_row(chidb_stmt *stmt) {
 	free(dbrb);
 	return CHIDB_OK;
 }
-
-
-
-
 //EOF
