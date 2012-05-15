@@ -104,6 +104,8 @@ struct dbm {
 	dbm_register registers[DBM_MAX_REGISTERS];
 	dbm_cursor cursors[DBM_MAX_CURSORS];
 	chidb *db;
+	BTreeCell ***cell_lists;
+	uint32_t *list_lengths;
 };
 
 typedef struct dbm dbm;
