@@ -611,7 +611,9 @@ int operation_idxkey(dbm *input_dbm, chidb_instruction inst) {
 
 int operation_key(dbm *input_dbm, chidb_instruction inst) {
 	input_dbm->registers[inst.P2].type = INTEGER;
-	input_dbm->registers[inst.P2].data.int_val = (uint32_t)input_dbm->cursors[inst.P1].curr_cell->key;
+	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+	uint32_t pos = input_dbm->cursors[inst.P1].pos;
+	input_dbm->registers[inst.P2].data.int_val = (int32_t)input_dbm->cell_lists[table_num][pos]->key;
 	input_dbm->registers[inst.P2].touched = 0;
 	return DBM_OK;
 }
@@ -897,14 +899,8 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			break;
 		}
 		case DBM_KEY: {
-			int retval = operation_key(input_dbm, inst);
-			if (retval == DBM_OK) {
-				input_dbm->tick_result = DBM_OK;
-				return DBM_OK;
-			} else {
-				input_dbm->tick_result = retval;
-				return DBM_HALT_STATE;
-			}
+			input_dbm->program_counter += 1;
+			return operation_key(input_dbm, inst);
 			break;
 		}
 		case DBM_INTEGER: {
