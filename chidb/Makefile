@@ -1,4 +1,4 @@
-all: libchidb shell-dummy tests
+all: libchidb shell shell-dummy tests
 
 .PHONY: libchidb tests clean
      
