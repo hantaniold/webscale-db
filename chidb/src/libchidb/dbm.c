@@ -94,7 +94,8 @@ void add_nodes(chidb_stmt *stmt, int table_num, BTreeNode *node) {
 		uint32_t start = *(stmt->input_dbm->list_lengths + table_num);
 		*(stmt->input_dbm->list_lengths + table_num) += node->n_cells;
 		printf("MY VAL: %i\n", *(stmt->input_dbm->list_lengths + table_num));
-		realloc(*(stmt->input_dbm->cell_lists + table_num), sizeof(BTreeCell *) * *(stmt->input_dbm->list_lengths + table_num));
+		*(stmt->input_dbm->cell_lists + table_num) = realloc(*(stmt->input_dbm->cell_lists + table_num), sizeof(BTreeCell *) * *(stmt->input_dbm->list_lengths + table_num));
+		printf("REALLOC VAL: %i\n", *(stmt->input_dbm->cell_lists + table_num));
 		uint32_t end = *(stmt->input_dbm->list_lengths + table_num);
 		int ecounter = 0;
 		printf("START: %i\n", start);
