@@ -87,10 +87,16 @@ typedef struct dbm_register dbm_register;
 struct dbm_cursor {
 	uint8_t touched;
 	uint32_t cell_num;
+	uint32_t pos;
+	
+	//THESE ARE ALL DEPRECATED
 	BTreeNode *node;
 	BTreeCell *curr_cell;
 	BTreeCell *prev_cell;
 	BTreeCell *next_cell;
+	//END DEPRECATED
+	uint32_t table_num;
+	uint32_t cols;
 };
 
 typedef struct dbm_cursor dbm_cursor;

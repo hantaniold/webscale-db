@@ -1498,12 +1498,13 @@ void test_9_8(void) {
 
 
 /* is_error - should the result of this test be an error */
-void openread_inst(dbm * input_dbm, uint32_t cursor_nr, uint32_t reg_nr, uint32_t page_nr, uint32_t is_error) {
+void openread_inst(dbm * input_dbm, uint32_t cursor_nr, uint32_t reg_nr, uint32_t page_nr, uint32_t cols, uint32_t is_error) {
     chidb_instruction inst;
     int old_pc = input_dbm->program_counter;
     inst.instruction = DBM_OPENREAD;
     inst.P1 = cursor_nr;
     inst.P2 = reg_nr;
+    inst.P3 = cols;
    
     int res = tick_dbm(input_dbm, inst);
     if (!is_error) {
@@ -1520,51 +1521,73 @@ void openread_inst(dbm * input_dbm, uint32_t cursor_nr, uint32_t reg_nr, uint32_
     
 }
 
+
+//OPENREAD
 void test_9_9(void) {
-	chidb * db;
-    int rc;
+	chidb *db;
+  db = malloc(sizeof(chidb));
+  BTree *bt;
+	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
+	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
+	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+	stmt->db = db;
+	dbm* test_dbm = init_dbm(stmt, 1);
+	CU_ASSERT(test_dbm != NULL);
+	stmt->input_dbm = test_dbm;
+	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
+	CU_ASSERT(*(stmt->input_dbm->list_lengths) == 3);
+	
+	integer_inst(test_dbm, 1, 2);
+	chidb_instruction inst;
+  int old_pc = test_dbm->program_counter;
+  inst.instruction = DBM_OPENREAD;
+  inst.P1 = 0;
+  inst.P2 = 1;
+  inst.P3 = 4;
+   
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
 
-    db = malloc(sizeof(chidb));
-    BTree *bt;
-    rc = chidb_Btree_open("singletable_singlepage.cdb", db, &(bt));
-    CU_ASSERT(bt != NULL);
-    CU_ASSERT(rc == CHIDB_OK);
-    chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
-    stmt->db = db;
-    
-    dbm * test_dbm = init_dbm(stmt->db, 0);
-    test_dbm->db = db;
-    test_dbm->db->bt = bt;
-
-    integer_inst(test_dbm, 2, -42);
-    openread_inst(test_dbm, 3, 2, -42, 1);
-    reset_assert(test_dbm);
-
-    integer_inst(test_dbm, 2, 2);
-    openread_inst(test_dbm, 3, 2, 2, 0);
-
-    free(test_dbm);
+  CU_ASSERT(test_dbm->readwritestate == DBM_READ_STATE);
+  CU_ASSERT(test_dbm->cursors[0].table_num == 0);
+  CU_ASSERT(old_pc == test_dbm->program_counter - 1);
+  
+	free(bt);
+	free(db);
+	free(stmt);
 }
 
-
+//OPENWRITE
 void test_9_10(void) {
-	chidb * db;
-    int rc;
+	chidb *db;
+  db = malloc(sizeof(chidb));
+  BTree *bt;
+	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
+	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
+	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+	stmt->db = db;
+	dbm* test_dbm = init_dbm(stmt, 1);
+	CU_ASSERT(test_dbm != NULL);
+	stmt->input_dbm = test_dbm;
+	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
+	CU_ASSERT(*(stmt->input_dbm->list_lengths) == 3);
+	
+	integer_inst(test_dbm, 1, 2);
+	chidb_instruction inst;
+  int old_pc = test_dbm->program_counter;
+  inst.instruction = DBM_OPENWRITE;
+  inst.P1 = 0;
+  inst.P2 = 1;
+  inst.P3 = 4;
+   
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
 
-    db = malloc(sizeof(chidb));
-    BTree * bt;
-    rc = chidb_Btree_open("singletable_singlepage.cdb", db, &bt);
-    CU_ASSERT(rc == CHIDB_OK);
-    
-    chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
-    stmt->db = db;
-    
-    dbm * test_dbm = init_dbm(stmt, 0);
-
-    chidb_instruction inst;
-    inst.instruction = DBM_OPENWRITE;
-
-    free(test_dbm);
+  CU_ASSERT(test_dbm->readwritestate == DBM_WRITE_STATE);
+  CU_ASSERT(test_dbm->cursors[0].table_num == 0);
+  CU_ASSERT(old_pc == test_dbm->program_counter - 1);
+  
+	free(bt);
+	free(db);
+	free(stmt);
 }
 
 void test_9_11(void) {
@@ -1856,7 +1879,24 @@ void test_10_1(void) {
   db = malloc(sizeof(chidb));
   BTree *bt;
 	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
+  CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
+  db = malloc(sizeof(chidb));
+	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
 	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
+	
+	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+	stmt->db = db;
+	dbm* test_dbm = init_dbm(stmt, 1);
+	CU_ASSERT(test_dbm != NULL);
+	stmt->input_dbm = test_dbm;
+	//init_lists(stmt);
+	
+	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
+	CU_ASSERT(*(stmt->input_dbm->list_lengths) == 3);
+	
+	free(bt);
+	free(db);
+	free(stmt);
 	
 }
 

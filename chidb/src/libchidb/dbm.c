@@ -842,22 +842,29 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 	switch (inst.instruction) {
 		case DBM_OPENWRITE:
 		case DBM_OPENREAD: {
-
 			if (inst.instruction == DBM_OPENWRITE) {
 				input_dbm->readwritestate = DBM_WRITE_STATE;
 			} else {
 				input_dbm->readwritestate = DBM_READ_STATE;
 			}
+			
 			uint32_t page_num = (input_dbm->registers[inst.P2]).data.int_val;
-			if (chidb_Btree_getNodeByPage(input_dbm->db->bt, page_num, &(input_dbm->cursors[inst.P1].node)) == CHIDB_OK) {
-			    input_dbm->cursors[inst.P1].touched = 1;
-				input_dbm->tick_result = DBM_OK;
-				input_dbm->program_counter += 1;
-				return DBM_OK;
-			} else {
-				input_dbm->tick_result = DBM_OPENRW_ERROR;
-				return DBM_HALT_STATE;
+			
+			input_dbm->cursors[inst.P1].touched = 1;
+			input_dbm->cursors[inst.P1].cols = inst.P3;
+			input_dbm->tick_result = DBM_OK;
+			input_dbm->program_counter += 1;
+			
+			
+			for (int i = 0; i < input_dbm->db->bt->schema_table_size; ++i) {
+				int root_page_num = input_dbm->db->bt->schema_table[i]->root_page;
+				if (root_page_num == page_num) {
+					input_dbm->cursors[inst.P1].table_num = i;
+					break;
+				}
 			}
+			
+			return DBM_OK;
 		}
 		case DBM_CLOSE: {
 			int retval = operation_cursor_close(input_dbm, inst.P1);
