@@ -37,29 +37,6 @@ dbm * init_dbm(chidb_stmt *stmt, uint8_t stopLoad) {
 }
 
 int operation_cursor_close(dbm *input_dbm, uint32_t cursor_id) {
-	if (input_dbm->cursors[cursor_id].touched == 1) {
-			if (chidb_Btree_freeMemNode(input_dbm->db->bt, input_dbm->cursors[cursor_id].node) == CHIDB_OK) {
-				if (input_dbm->cursors[cursor_id].node != NULL) {
-					free(input_dbm->cursors[cursor_id].node);
-					input_dbm->cursors[cursor_id].node = NULL;
-				}
-				if (input_dbm->cursors[cursor_id].curr_cell != NULL) {
-					free(input_dbm->cursors[cursor_id].curr_cell);
-					input_dbm->cursors[cursor_id].curr_cell = NULL;
-				}
-				if (input_dbm->cursors[cursor_id].next_cell != NULL) {
-					free(input_dbm->cursors[cursor_id].next_cell);
-					input_dbm->cursors[cursor_id].next_cell = NULL;
-				}
-				if (input_dbm->cursors[cursor_id].prev_cell != NULL) {
-					free(input_dbm->cursors[cursor_id].prev_cell);
-					input_dbm->cursors[cursor_id].prev_cell = NULL;
-				}
-			} else {
-				return DBM_MEMORY_FREE_ERROR;
-			}
-	}
-	input_dbm->cursors[cursor_id].touched = 0;
 	return DBM_OK;
 }
 
@@ -698,26 +675,10 @@ int operation_next(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_prev(dbm *input_dbm, chidb_instruction inst) {
-	if (input_dbm->cursors[inst.P1].cell_num - 1 >= 0) {
-		if (input_dbm->cursors[inst.P1].prev_cell == NULL) {
-			input_dbm->cursors[inst.P1].prev_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
-		}
-		if (input_dbm->cursors[inst.P1].curr_cell == NULL) {
-			input_dbm->cursors[inst.P1].curr_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
-		}
-		if (input_dbm->cursors[inst.P1].next_cell == NULL) {
-			input_dbm->cursors[inst.P1].next_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
-		}
-		ncell_t prev = input_dbm->cursors[inst.P1].cell_num;
-		input_dbm->cursors[inst.P1].next_cell = input_dbm->cursors[inst.P1].curr_cell;
-		input_dbm->cursors[inst.P1].curr_cell = input_dbm->cursors[inst.P1].prev_cell;
-		input_dbm->cursors[inst.P1].prev_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
-		chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, prev, input_dbm->cursors[inst.P1].prev_cell);
+	if (input_dbm->cursors[inst.P1].pos > 0) {
+		input_dbm->cursors[inst.P1].pos -= 1;
 		input_dbm->program_counter = inst.P2;
-		input_dbm->cursors[inst.P1].cell_num -= 1;
-		return DBM_OK;
 	} else {
-		// do nothing
 		input_dbm->program_counter += 1;
 	}
 	return DBM_OK;
@@ -771,7 +732,10 @@ int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
 
 int operation_column(dbm *input_dbm, chidb_instruction inst) {
 	DBRecord *record;
-	chidb_DBRecord_unpack(&(record), input_dbm->cursors[inst.P1].curr_cell->fields.tableLeaf.data);
+	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+	uint32_t pos = input_dbm->cursors[inst.P1].pos;
+	input_dbm->registers[inst.P2].data.int_val = (int32_t)input_dbm->cell_lists[table_num][pos]->key;
+	chidb_DBRecord_unpack(&(record), input_dbm->cell_lists[table_num][pos]->fields.tableLeaf.data);
 	int type = chidb_DBRecord_getType(record, inst.P2);
 	if (type == SQL_NULL) {
 		input_dbm->registers[inst.P3].type = NL;
@@ -859,28 +823,10 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			return operation_rewind(input_dbm, inst);
 			break;
 		}
-		case DBM_NEXT: {
-			int retval = operation_next(input_dbm, inst);
-			if (retval == DBM_OK) {
-				input_dbm->tick_result = DBM_OK;
-				return DBM_OK;
-			} else {
-				input_dbm->tick_result = retval;
-				return DBM_HALT_STATE;
-			}
-			break;
-		}
-		case DBM_PREV: {
-			int retval = operation_prev(input_dbm, inst);
-			if (retval == DBM_OK) {
-				input_dbm->tick_result = DBM_OK;
-				return DBM_OK;
-			} else {
-				input_dbm->tick_result = retval;
-				return DBM_HALT_STATE;
-			}
-			break;
-		}
+		case DBM_NEXT: 
+			return operation_next(input_dbm, inst);
+		case DBM_PREV: 
+			return operation_prev(input_dbm, inst);
 		case DBM_SEEK:
 			break;
 		case DBM_SEEKGT:
