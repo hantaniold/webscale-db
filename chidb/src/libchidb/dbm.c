@@ -272,6 +272,9 @@ int operation_eq(dbm *input_dbm, chidb_instruction inst) {
 	}
 }
 int operation_ne(dbm *input_dbm, chidb_instruction inst) {
+    printf("REG NUM 1: %i | REG NUM 2: %i\n", inst.P1, inst.P3);
+    printf("REG TYPE 1: %i | REG TYPE 2: %i\n", input_dbm->registers[inst.P1].type, input_dbm->registers[inst.P3].type);
+    printf("REG VAL 1: %i | REG VAL 2 %i\n", input_dbm->registers[inst.P1].data.int_val, input_dbm->registers[inst.P3].data.int_val);
 	if (input_dbm->registers[inst.P1].type == input_dbm->registers[inst.P3].type) {
 		switch (input_dbm->registers[inst.P1].type) {
 			case INTEGER:
@@ -686,6 +689,76 @@ int operation_prev(dbm *input_dbm, chidb_instruction inst) {
 	}
 	return DBM_OK;
 }
+//TODO - RETURN HERE
+
+int operation_seek(dbm* input_dbm, chidb_instruction inst) {
+	uint32_t old_pos = input_dbm->cursors[inst.P1].pos;
+	uint32_t curr = 0;
+	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+	int32_t cmp_val = input_dbm->registers[inst.P3].data.int_val;
+	uint8_t found = 0;
+	for (; curr < *(input_dbm->list_lengths + input_dbm->cursors[inst.P1].table_num); ++curr) {
+		if (cmp_val == input_dbm->cell_lists[table_num][curr]->key) {
+			found = 1;
+			break;
+		}
+	}
+	if (found == 1) {
+		input_dbm->cursors[inst.P1].pos = curr;
+		input_dbm->program_counter += 1;
+		return DBM_OK;
+	} else {
+		input_dbm->cursors[inst.P1].pos = old_pos;
+		input_dbm->program_counter = inst.P2;
+		return DBM_OK;
+	}
+}
+
+int operation_seekgt(dbm* input_dbm, chidb_instruction inst) {
+	uint32_t old_pos = input_dbm->cursors[inst.P1].pos;
+	uint32_t curr = 0;
+	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+	int32_t cmp_val = input_dbm->registers[inst.P3].data.int_val;
+	uint8_t found = 0;
+	for (; curr < *(input_dbm->list_lengths + input_dbm->cursors[inst.P1].table_num); ++curr) {
+		if (cmp_val < input_dbm->cell_lists[table_num][curr]->key) {
+			found = 1;
+			break;
+		}
+	}
+	if (found == 1) {
+		input_dbm->cursors[inst.P1].pos = curr;
+		input_dbm->program_counter += 1;
+		return DBM_OK;
+	} else {
+		input_dbm->cursors[inst.P1].pos = old_pos;
+		input_dbm->program_counter = inst.P2;
+		return DBM_OK;
+	}
+}
+
+int operation_seekge(dbm* input_dbm, chidb_instruction inst) {
+	uint32_t old_pos = input_dbm->cursors[inst.P1].pos;
+	uint32_t curr = 0;
+	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+	int32_t cmp_val = input_dbm->registers[inst.P3].data.int_val;
+	uint8_t found = 0;
+	for (; curr < *(input_dbm->list_lengths + input_dbm->cursors[inst.P1].table_num); ++curr) {
+		if (cmp_val <= input_dbm->cell_lists[table_num][curr]->key) {
+			found = 1;
+			break;
+		}
+	}
+	if (found == 1) {
+		input_dbm->cursors[inst.P1].pos = curr;
+		input_dbm->program_counter += 1;
+		return DBM_OK;
+	} else {
+		input_dbm->cursors[inst.P1].pos = old_pos;
+		input_dbm->program_counter = inst.P2;
+		return DBM_OK;
+	}
+}
 
 int operation_idxinsert(dbm *input_dbm, chidb_instruction inst) {
   key_t keyIdx = (key_t)input_dbm->registers[inst.P2].data.int_val;
@@ -769,7 +842,7 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 			int32_t *v = (int32_t *)malloc(sizeof(int32_t));
 			chidb_DBRecord_getInt32(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
-			printf("INTEGER VALUE %i\n", *v);
+			printf("INTEGER VALUE %i stored in register %i\n", *v, inst.P3);
 			free(v);
 		}
 		input_dbm->program_counter += 1;
@@ -846,10 +919,12 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 		case DBM_PREV: 
 			return operation_prev(input_dbm, inst);
 		case DBM_SEEK:
-			break;
+			return operation_seek(input_dbm, inst);
 		case DBM_SEEKGT:
+			return operation_seekgt(input_dbm, inst);
 			break;
 		case DBM_SEEKGE:
+			return operation_seekge(input_dbm, inst);
 			break;
 		case DBM_COLUMN: {
 			int retval = operation_column(input_dbm, inst);
