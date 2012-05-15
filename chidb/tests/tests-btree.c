@@ -1800,18 +1800,7 @@ void test_9_13(void) {
 void test_9_14(void) {
     //DBM_INSERT
 }
-/*
-struct chidb_stmt {
-    chidb_instruction *ins;
-    int num_instructions;
-    DBRecord *record;
-    chidb *db;
-    SQLStatement *sql;
-    uint8_t initialized_dbm;
-    dbm *input_dbm;
-};
 
-*/
 void test_9_15(void) {
 	//DBM_RESULTROW
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
@@ -1844,7 +1833,6 @@ void test_9_15(void) {
 	free(stmt);
 }
 
-
 void test_10_1(void) {
 	//chidb_load_schema tests
 	chidb *db;
@@ -1853,6 +1841,37 @@ void test_10_1(void) {
 	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
 	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
 	
+}
+
+/*
+struct chidb_stmt {
+    chidb_instruction *ins;
+    int num_instructions;
+    DBRecord *record;
+    chidb *db;
+    SQLStatement *sql;
+    uint8_t initialized_dbm;
+    dbm *input_dbm;
+};
+
+*/
+
+void test_10_2(void) {
+	//TREE FLATTENING TEST
+	chidb *db;
+  db = malloc(sizeof(chidb));
+  BTree *bt;
+	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
+	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
+	dbm* test_dbm = init_dbm(db);
+	CU_ASSERT(test_dbm != NULL);
+	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+	stmt->db = db;
+	stmt->input_dbm = test_dbm;
+	init_lists(stmt);
+	free(bt);
+	free(db);
+	free(stmt);
 }
 
 int init_tests_btree()
@@ -1941,7 +1960,8 @@ int init_tests_btree()
       (NULL == CU_add_test(dbmTests, "9.14 - DBM_INSERT", test_9_14)) ||
       (NULL == CU_add_test(dbmTests, "9.15 - DBM_RESULTROW", test_9_15)) ||
       /* Schema loading tests */
-      (NULL == CU_add_test(schemaLoadTests, "10.1 - chidb_load_schema", test_10_1))
+      (NULL == CU_add_test(schemaLoadTests, "10.1 - chidb_load_schema", test_10_1)) ||
+      (NULL == CU_add_test(dbmTests, "10.2 - Tree flattening test", test_10_2))
       )
     {
       CU_cleanup_registry();

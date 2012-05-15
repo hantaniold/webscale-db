@@ -90,12 +90,17 @@ int reset_dbm(dbm *input_dbm) {
 
 void add_nodes(chidb_stmt *stmt, int table_num, BTreeNode *node) {
 	if (node->type == PGTYPE_TABLE_LEAF) {
+		printf("TABLE NUM: %i\n", table_num);
 		uint32_t start = *(stmt->input_dbm->list_lengths + table_num);
 		*(stmt->input_dbm->list_lengths + table_num) += node->n_cells;
+		printf("MY VAL: %i\n", *(stmt->input_dbm->list_lengths + table_num));
 		realloc(*(stmt->input_dbm->cell_lists + table_num), sizeof(BTreeCell *) * *(stmt->input_dbm->list_lengths + table_num));
 		uint32_t end = *(stmt->input_dbm->list_lengths + table_num);
 		int ecounter = 0;
+		printf("START: %i\n", start);
+		printf("END: %i\n", end);
 		for (int i = start; i < end; ++i) {
+			printf("POINTER VAL: %i\n", *(*(stmt->input_dbm->cell_lists + table_num) + i));
 			*(*(stmt->input_dbm->cell_lists + table_num) + i) = (BTreeCell *)malloc(sizeof(BTreeCell));
 			chidb_Btree_getCell(node, (ncell_t)ecounter, *(*(stmt->input_dbm->cell_lists + table_num) + i));
 			ecounter += 1;	
@@ -124,12 +129,12 @@ void recursive_construct(chidb_stmt *stmt, BTree * bt, npage_t page_num, int tab
 }
 
 void init_lists(chidb_stmt *stmt) {
-	//BTreeCell ***cell_lists;
 	stmt->input_dbm->cell_lists = (BTreeCell ***)malloc(sizeof(BTreeCell **) * stmt->db->bt->schema_table_size);
+	printf("SCHEMA TABLE SIZE: %i\n", stmt->db->bt->schema_table_size);
 	stmt->input_dbm->list_lengths = (uint32_t *)malloc(sizeof(uint32_t) * stmt->db->bt->schema_table_size);
 	for (int i = 0; i < stmt->db->bt->schema_table_size; ++i) {
 		*(stmt->input_dbm->cell_lists + i) = NULL;
-		*(stmt->input_dbm->list_lengths + 1) = 0;
+		*(stmt->input_dbm->list_lengths + i) = 0;
 		int root_page_num = stmt->db->bt->schema_table[i]->root_page;
 		BTreeNode *root_node;
 		chidb_Btree_getNodeByPage(stmt->db->bt, root_page_num, &(root_node));
@@ -149,7 +154,6 @@ void init_lists(chidb_stmt *stmt) {
 		free(root_node);
 	}
 }
-
 
 int operation_eq(dbm *input_dbm, chidb_instruction inst) {
 	if (input_dbm->registers[inst.P1].type == input_dbm->registers[inst.P3].type) {
@@ -604,6 +608,31 @@ int operation_prev(dbm *input_dbm, chidb_instruction inst) {
 	return DBM_OK;
 }
 
+int operation_idxinsert(dbm *input_dbm, chidb_instruction inst) {
+  key_t keyIdx = (key_t)input_dbm->registers[inst.P2].data.int_val;
+  key_t keyPk = (key_t)input_dbm->registers[inst.P3].data.int_val;
+  npage_t nroot = (npage_t)input_dbm->table_root;
+
+  int retval = chidb_Btree_insertInIndex(input_dbm->db->bt, nroot, keyIdx, keyPk);
+
+  if (retval == CHIDB_EDUPLICATE) {
+    return DBM_DUPLICATE_KEY;
+  }
+  if (retval == CHIDB_ENOMEM) {
+    return DBM_MEMORY_ERROR;
+  }
+  if (retval == CHIDB_EIO) {
+    return DBM_IO_ERROR;
+  }
+  return DBM_OK;
+}
+
+int operation_scopy(dbm *input_dbm, chidb_instruction inst) {
+  input_dbm->registers[inst.P2] = input_dbm->registers[inst.P1];
+
+  return DBM_OK;
+}
+
 //DBM_INSERT
 int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
 	if (input_dbm->registers[inst.P2].type == RECORD) {
@@ -897,14 +926,32 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			break;
 		case DBM_IDXKEY:
 			break;
-		case DBM_IDXINSERT:
+		case DBM_IDXINSERT: {
+		int retval = operation_idxinsert(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
+     }
 		case DBM_CREATETABLE:
 			break;
 		case DBM_CREATEINDEX:
 			break;
-		case DBM_SCOPY:
+		case DBM_SCOPY:{
+			int retval = operation_scopy(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
+    }
 		case DBM_HALT:
 			if (inst.P1 == 0) {
 				input_dbm->tick_result = DBM_OK;
