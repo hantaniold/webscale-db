@@ -89,6 +89,7 @@ struct dbm_cursor {
 	uint32_t cell_num;
 	uint32_t pos;
 	BTreeNode *node;
+	uint32_t root_page_num;
 	
 	//THESE ARE ALL DEPRECATED
 	BTreeCell *curr_cell;
