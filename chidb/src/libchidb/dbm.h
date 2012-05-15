@@ -106,7 +106,7 @@ struct dbm {
 	uint32_t tick_result; //stores the result of the last tick operation - used for error tracking
 	char *error_str;
 	uint8_t readwritestate;
-    uint32_t table_root; //Root page of current table to be inserted to
+  uint32_t table_root; //Root page of current table to be inserted to
 	dbm_register registers[DBM_MAX_REGISTERS];
 	dbm_cursor cursors[DBM_MAX_CURSORS];
 	chidb *db;

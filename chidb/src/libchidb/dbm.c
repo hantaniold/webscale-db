@@ -738,25 +738,31 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 	chidb_DBRecord_unpack(&(record), input_dbm->cell_lists[table_num][pos]->fields.tableLeaf.data);
 	int type = chidb_DBRecord_getType(record, inst.P2);
 	if (type == SQL_NULL) {
+		printf("USING NL VALUE\n");
 		input_dbm->registers[inst.P3].type = NL;
+		input_dbm->registers[inst.P3].data.int_val = NULL;
+		input_dbm->registers[inst.P3].data.str_val = NULL;
 		input_dbm->program_counter += 1;
 		return DBM_OK;
 	}
 	if (type == SQL_INTEGER_1BYTE || type == SQL_INTEGER_2BYTE || type == SQL_INTEGER_4BYTE) {
 		input_dbm->registers[inst.P3].type = INTEGER;
 		if (type == SQL_INTEGER_1BYTE) {
+			printf("USING 1 BYTE\n");
 			int8_t *v = (int8_t *)malloc(sizeof(int8_t));
 			chidb_DBRecord_getInt8(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
 			free(v);
 		}
 		if (type == SQL_INTEGER_2BYTE) {
+			printf("USING 2 BYTE\n");
 			int16_t *v = (int16_t *)malloc(sizeof(int16_t));
 			chidb_DBRecord_getInt16(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
 			free(v);
 		}
 		if (type == SQL_INTEGER_4BYTE) {
+			printf("USING 4 BYTE\n");
 			int32_t *v = (int32_t *)malloc(sizeof(int32_t));
 			chidb_DBRecord_getInt32(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
@@ -766,6 +772,7 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 		return DBM_OK;
 	}
 	if (type == SQL_TEXT) {
+		printf("STRING VALUE\n");
 		input_dbm->registers[inst.P3].type = STRING;
 		int *len = (int *)malloc(sizeof(int));
 		chidb_DBRecord_getStringLength(record, inst.P2, len);

@@ -1804,8 +1804,7 @@ void test_9_16(void) {
 }
 
 void test_9_17(void) {
-//DBM_NEXT
-	//DBM_REWIND
+//DBM_PREV
 	chidb *db;
   db = malloc(sizeof(chidb));
   BTree *bt;
@@ -1888,6 +1887,135 @@ void test_9_17(void) {
   CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
   CU_ASSERT(test_dbm->program_counter == 57);
   CU_ASSERT(test_dbm->cursors[0].pos == 0);
+  
+	free(bt);
+	free(db);
+	free(stmt);
+}
+
+void test_9_18(void) { 
+	//DBM_COLUMN
+	chidb *db;
+  db = malloc(sizeof(chidb));
+  BTree *bt;
+	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
+	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
+	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+	stmt->db = db;
+	dbm* test_dbm = init_dbm(stmt, 1);
+	CU_ASSERT(test_dbm != NULL);
+	stmt->input_dbm = test_dbm;
+	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
+	CU_ASSERT(*(stmt->input_dbm->list_lengths) == 3);
+	
+	integer_inst(test_dbm, 1, 2);
+	chidb_instruction inst;
+  int old_pc = test_dbm->program_counter;
+  inst.instruction = DBM_OPENREAD;
+  inst.P1 = 0;
+  inst.P2 = 1;
+  inst.P3 = 4;
+   
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+
+  CU_ASSERT(test_dbm->readwritestate == DBM_READ_STATE);
+  CU_ASSERT(test_dbm->cursors[0].table_num == 0);
+  CU_ASSERT(old_pc == test_dbm->program_counter - 1);
+  
+  inst.instruction = DBM_REWIND;
+  inst.P1 = 0;
+  inst.P2 = 678;
+  
+  old_pc = test_dbm->program_counter;
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == (old_pc + 1));
+  
+  inst.instruction = DBM_NEXT;
+  inst.P1 = 0;
+  inst.P2 = 499;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 499);
+  CU_ASSERT(test_dbm->cursors[0].pos == 1);
+  
+  inst.instruction = DBM_NEXT;
+  inst.P1 = 0;
+  inst.P2 = 524;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 524);
+  CU_ASSERT(test_dbm->cursors[0].pos == 2);
+  
+  inst.instruction = DBM_NEXT;
+  inst.P1 = 0;
+  inst.P2 = 524;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 525);
+  CU_ASSERT(test_dbm->cursors[0].pos == 2);
+  
+  inst.instruction = DBM_PREV;
+  inst.P1 = 0;
+  inst.P2 = 67;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 67);
+  CU_ASSERT(test_dbm->cursors[0].pos == 1);
+  
+  inst.instruction = DBM_PREV;
+  inst.P1 = 0;
+  inst.P2 = 56;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 56);
+  CU_ASSERT(test_dbm->cursors[0].pos == 0);
+  
+  inst.instruction = DBM_PREV;
+  inst.P1 = 0;
+  inst.P2 = 67;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 57);
+  CU_ASSERT(test_dbm->cursors[0].pos == 0);
+  
+  test_dbm->program_counter = 0;
+  
+  inst.instruction = DBM_COLUMN;
+  inst.P1 = 0;
+  inst.P2 = 0;
+  inst.P3 = 1;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 1);
+  CU_ASSERT(test_dbm->registers[1].type == NL);
+  
+  inst.instruction = DBM_COLUMN;
+  inst.P1 = 0;
+  inst.P2 = 1;
+  inst.P3 = 2;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 2);
+  CU_ASSERT(test_dbm->registers[2].type == STRING);
+  CU_ASSERT(strcmp(test_dbm->registers[2].data.str_val, "Programming Languages") == 0);
+  
+  inst.instruction = DBM_NEXT;
+  inst.P1 = 0;
+  inst.P2 = 524;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 524);
+  CU_ASSERT(test_dbm->cursors[0].pos == 1);
+  
+  inst.instruction = DBM_COLUMN;
+  inst.P1 = 0;
+  inst.P2 = 2;
+  inst.P3 = 4;
+  
+  CU_ASSERT(tick_dbm(test_dbm, inst) == DBM_OK);
+  CU_ASSERT(test_dbm->program_counter == 525);
+  CU_ASSERT(test_dbm->registers[4].type == NL);
+  CU_ASSERT(test_dbm->registers[4].data.int_val == NULL);
   
 	free(bt);
 	free(db);
@@ -2113,6 +2241,7 @@ int init_tests_btree()
       (NULL == CU_add_test(dbmTests, "9.15 - DBM_RESULTROW", test_9_15)) ||
       (NULL == CU_add_test(dbmTests, "9.16 - DBM_KEY", test_9_16)) ||
       (NULL == CU_add_test(dbmTests, "9.17 - DBM_PREV", test_9_17)) ||
+      (NULL == CU_add_test(dbmTests, "9.18 - DBM_COLUMN", test_9_18)) ||
       /* Schema loading tests */
       
       (NULL == CU_add_test(schemaLoadTests, "10.1 - chidb_load_schema", test_10_1)) ||
