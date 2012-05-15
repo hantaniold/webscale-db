@@ -88,9 +88,9 @@ struct dbm_cursor {
 	uint8_t touched;
 	uint32_t cell_num;
 	uint32_t pos;
+	BTreeNode *node;
 	
 	//THESE ARE ALL DEPRECATED
-	BTreeNode *node;
 	BTreeCell *curr_cell;
 	BTreeCell *prev_cell;
 	BTreeCell *next_cell;
@@ -151,5 +151,6 @@ int reset_dbm(dbm *);
 int tick_dbm(dbm *input_dbm, chidb_instruction stmt);
 
 int generate_result_row(chidb_stmt *stmt);
+
 
 

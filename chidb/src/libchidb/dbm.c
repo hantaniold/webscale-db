@@ -683,6 +683,76 @@ int operation_prev(dbm *input_dbm, chidb_instruction inst) {
 	}
 	return DBM_OK;
 }
+//TODO - RETURN HERE
+
+int operation_seek(dbm* input_dbm, chidb_instruction inst) {
+	uint32_t old_pos = input_dbm->cursors[inst.P1].pos;
+	uint32_t curr = 0;
+	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+	int32_t cmp_val = input_dbm->registers[inst.P3].data.int_val;
+	uint8_t found = 0;
+	for (; curr < *(input_dbm->list_lengths + input_dbm->cursors[inst.P1].table_num); ++curr) {
+		if (cmp_val == input_dbm->cell_lists[table_num][curr]->key) {
+			found = 1;
+			break;
+		}
+	}
+	if (found == 1) {
+		input_dbm->cursors[inst.P1].pos = curr;
+		input_dbm->program_counter += 1;
+		return DBM_OK;
+	} else {
+		input_dbm->cursors[inst.P1].pos = old_pos;
+		input_dbm->program_counter = inst.P2;
+		return DBM_OK;
+	}
+}
+
+int operation_seekgt(dbm* input_dbm, chidb_instruction inst) {
+	uint32_t old_pos = input_dbm->cursors[inst.P1].pos;
+	uint32_t curr = 0;
+	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+	int32_t cmp_val = input_dbm->registers[inst.P3].data.int_val;
+	uint8_t found = 0;
+	for (; curr < *(input_dbm->list_lengths + input_dbm->cursors[inst.P1].table_num); ++curr) {
+		if (cmp_val < input_dbm->cell_lists[table_num][curr]->key) {
+			found = 1;
+			break;
+		}
+	}
+	if (found == 1) {
+		input_dbm->cursors[inst.P1].pos = curr;
+		input_dbm->program_counter += 1;
+		return DBM_OK;
+	} else {
+		input_dbm->cursors[inst.P1].pos = old_pos;
+		input_dbm->program_counter = inst.P2;
+		return DBM_OK;
+	}
+}
+
+int operation_seekge(dbm* input_dbm, chidb_instruction inst) {
+	uint32_t old_pos = input_dbm->cursors[inst.P1].pos;
+	uint32_t curr = 0;
+	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+	int32_t cmp_val = input_dbm->registers[inst.P3].data.int_val;
+	uint8_t found = 0;
+	for (; curr < *(input_dbm->list_lengths + input_dbm->cursors[inst.P1].table_num); ++curr) {
+		if (cmp_val <= input_dbm->cell_lists[table_num][curr]->key) {
+			found = 1;
+			break;
+		}
+	}
+	if (found == 1) {
+		input_dbm->cursors[inst.P1].pos = curr;
+		input_dbm->program_counter += 1;
+		return DBM_OK;
+	} else {
+		input_dbm->cursors[inst.P1].pos = old_pos;
+		input_dbm->program_counter = inst.P2;
+		return DBM_OK;
+	}
+}
 
 int operation_idxinsert(dbm *input_dbm, chidb_instruction inst) {
   key_t keyIdx = (key_t)input_dbm->registers[inst.P2].data.int_val;
@@ -847,10 +917,12 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 		case DBM_PREV: 
 			return operation_prev(input_dbm, inst);
 		case DBM_SEEK:
-			break;
+			return operation_seek(input_dbm, inst);
 		case DBM_SEEKGT:
+			return operation_seekgt(input_dbm, inst);
 			break;
 		case DBM_SEEKGE:
+			return operation_seekge(input_dbm, inst);
 			break;
 		case DBM_COLUMN: {
 			int retval = operation_column(input_dbm, inst);
