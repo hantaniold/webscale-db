@@ -785,6 +785,7 @@ int operation_scopy(dbm *input_dbm, chidb_instruction inst) {
 int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
 	if (input_dbm->registers[inst.P2].type == RECORD) {
 		int retval = chidb_Btree_insertInTable(input_dbm->db->bt, (npage_t)input_dbm->cursors[inst.P1].root_page_num, (key_t)input_dbm->registers[inst.P3].data.int_val, input_dbm->registers[inst.P2].data.record_val->data, (uint16_t)input_dbm->registers[inst.P2].data.record_val->data_len);
+		input_dbm->program_counter += 1;
 		if (retval == CHIDB_EDUPLICATE) {
 			return DBM_DUPLICATE_KEY;
 		}
