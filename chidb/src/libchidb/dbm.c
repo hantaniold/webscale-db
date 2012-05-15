@@ -576,12 +576,15 @@ int operation_idxle(dbm *input_dbm, chidb_instruction inst) {
 
 int operation_idxkey(dbm *input_dbm, chidb_instruction inst) {
     key_t key;
-    switch(input_dbm->cursors[inst.P1].curr_cell->type) {
+    uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+    uint32_t pos =  input_dbm->cursors[inst.P1].pos;
+
+    switch(input_dbm->cell_lists[table_num][pos]->type) {
         case PGTYPE_INDEX_INTERNAL:
-            key = input_dbm->cursors[inst.P1].curr_cell->fields.indexInternal.keyPk;
+            key = input_dbm->cell_lists[table_num][pos]->fields.indexInternal.keyPk;
             break;
         case PGTYPE_INDEX_LEAF:
-            key = input_dbm->cursors[inst.P1].curr_cell->fields.indexLeaf.keyPk;
+            key = input_dbm->cell_lists[table_num][pos]->fields.indexLeaf.keyPk;
             break;
     }
     input_dbm->registers[inst.P2].data.int_val = (uint32_t)key;
@@ -764,14 +767,10 @@ int operation_idxinsert(dbm *input_dbm, chidb_instruction inst) {
 
   int retval = chidb_Btree_insertInIndex(input_dbm->db->bt, nroot, keyIdx, keyPk);
 
-  if (retval == CHIDB_EDUPLICATE) {
-    return DBM_DUPLICATE_KEY;
-  }
-  if (retval == CHIDB_ENOMEM) {
-    return DBM_MEMORY_ERROR;
-  }
-  if (retval == CHIDB_EIO) {
-    return DBM_IO_ERROR;
+  switch (retval) {
+      case CHIDB_EDUPLICATE: return DBM_DUPLICATE_KEY; break;
+      case CHIDB_ENOMEM: return DBM_MEMORY_ERROR; break;
+      case CHIDB_EIO: return DBM_IO_ERROR; break;
   }
   return DBM_OK;
 }
