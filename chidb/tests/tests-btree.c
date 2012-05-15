@@ -1873,6 +1873,32 @@ void test_10_2(void) {
 	free(db);
 	free(stmt);
 }
+/*
+      (NULL == CU_add_test(dbmTests, "11.1 - Print column name", test_11_1))  || 
+      (NULL == CU_add_test(dbmTests, "11.2 - Print nrcols of select/insert", test_11_2)) ||
+      (NULL == CU_add_test(dbmTests, "11.3 - Print column type", test_11_3)) ||
+      (NULL == CU_add_test(dbmTests, "11.4 - Print int from col", test_11_4)) ||
+      (NULL == CU_add_test(dbmTests, "11.5 - Print str from col", test_11_5))
+      */
+
+void test_11_1(void) {
+}
+
+void test_11_2(void) {
+}
+
+void test_11_3(void) {
+}
+
+void test_11_4(void) {
+}
+
+void test_11_5(void) {
+}
+
+
+
+
 
 int init_tests_btree()
 {
@@ -1961,7 +1987,15 @@ int init_tests_btree()
       (NULL == CU_add_test(dbmTests, "9.15 - DBM_RESULTROW", test_9_15)) ||
       /* Schema loading tests */
       (NULL == CU_add_test(schemaLoadTests, "10.1 - chidb_load_schema", test_10_1)) ||
-      (NULL == CU_add_test(dbmTests, "10.2 - Tree flattening test", test_10_2))
+      (NULL == CU_add_test(dbmTests, "10.2 - Tree flattening test", test_10_2)) ||
+
+      /* API tests */
+
+      (NULL == CU_add_test(dbmTests, "11.1 - Print column name", test_11_1))  || 
+      (NULL == CU_add_test(dbmTests, "11.2 - Print nrcols of select/insert", test_11_2)) ||
+      (NULL == CU_add_test(dbmTests, "11.3 - Print column type", test_11_3)) ||
+      (NULL == CU_add_test(dbmTests, "11.4 - Print int from col", test_11_4)) ||
+      (NULL == CU_add_test(dbmTests, "11.5 - Print str from col", test_11_5))
       )
     {
       CU_cleanup_registry();
