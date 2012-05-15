@@ -1158,7 +1158,7 @@ void halt_inst(dbm *input_dbm, uint32_t error_code, char *error_message) {
 
 void test_9_1(void)
 {
-	dbm* test_dbm = init_dbm(NULL);
+	dbm* test_dbm = init_dbm(NULL, 0);
 	printf("\nTest DBM_INTEGER...\n");
 	integer_inst(test_dbm, 10, 21678);
 	reset_assert(test_dbm);
@@ -1183,7 +1183,7 @@ void test_9_1(void)
 
 void test_9_2(void) {
 	//DBM_EQ
-	dbm* test_dbm = init_dbm(NULL);
+	dbm* test_dbm = init_dbm(NULL, 0);
 	string_inst(test_dbm, 100, "charles\0");
 	string_inst(test_dbm, 200, "charles\0");
 	eq_inst(test_dbm, 100, 7, 200);
@@ -1254,7 +1254,7 @@ void test_9_2(void) {
 }
 void test_9_3(void) {
 	//DBM_NE
-	dbm* test_dbm = init_dbm(NULL);
+	dbm* test_dbm = init_dbm(NULL, 0);
 
     integer_inst(test_dbm, 0, 123);
     integer_inst(test_dbm, 1, 44);
@@ -1318,7 +1318,7 @@ void test_9_3(void) {
 
 void test_9_4(void) {
 	//DBM_LT
-	dbm* test_dbm = init_dbm(NULL);
+	dbm* test_dbm = init_dbm(NULL, 0);
 	integer_inst(test_dbm, 0, 123);
 	integer_inst(test_dbm, 1, 44);
 	lt_inst(test_dbm, 0, 42, 1);
@@ -1360,7 +1360,7 @@ void test_9_4(void) {
 }
 void test_9_5(void) {
 	//DBM_LT
-	dbm* test_dbm = init_dbm(NULL);
+	dbm* test_dbm = init_dbm(NULL, 0);
 	integer_inst(test_dbm, 0, 123);
 	integer_inst(test_dbm, 1, 44);
 	le_inst(test_dbm, 0, 42, 1);
@@ -1402,7 +1402,7 @@ void test_9_5(void) {
 }
 void test_9_6(void) {
 	//DBM_GT
-	dbm* test_dbm = init_dbm(NULL);
+	dbm* test_dbm = init_dbm(NULL, 0);
 	integer_inst(test_dbm, 0, 123);
 	integer_inst(test_dbm, 1, 44);
 	gt_inst(test_dbm, 0, 42, 1);
@@ -1444,7 +1444,7 @@ void test_9_6(void) {
 }
 void test_9_7(void) {
 	//DBM_GE
-	dbm* test_dbm = init_dbm(NULL);
+	dbm* test_dbm = init_dbm(NULL, 0);
 	integer_inst(test_dbm, 0, 123);
 	integer_inst(test_dbm, 1, 44);
 	ge_inst(test_dbm, 0, 42, 1);
@@ -1486,7 +1486,7 @@ void test_9_7(void) {
 }
 void test_9_8(void) {
 	//DBM_HALT
-	dbm* test_dbm = init_dbm(NULL);
+	dbm* test_dbm = init_dbm(NULL, 0);
 	halt_inst(test_dbm, 0, NULL);
 	
 	reset_assert(test_dbm);
@@ -1525,10 +1525,16 @@ void test_9_9(void) {
     int rc;
 
     db = malloc(sizeof(chidb));
-    rc = chidb_Btree_open(MULTIINDEXFILE, db, &db->bt);
+    BTree *bt;
+    rc = chidb_Btree_open("singletable_singlepage.cdb", db, &(bt));
+    CU_ASSERT(bt != NULL);
     CU_ASSERT(rc == CHIDB_OK);
+    chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+    stmt->db = db;
     
-    dbm * test_dbm = init_dbm(db);
+    dbm * test_dbm = init_dbm(stmt->db, 0);
+    test_dbm->db = db;
+    test_dbm->db->bt = bt;
 
     integer_inst(test_dbm, 2, -42);
     openread_inst(test_dbm, 3, 2, -42, 1);
@@ -1547,10 +1553,13 @@ void test_9_10(void) {
 
     db = malloc(sizeof(chidb));
     BTree * bt;
-    rc = chidb_Btree_open(MULTIINDEXFILE, db, &bt);
+    rc = chidb_Btree_open("singletable_singlepage.cdb", db, &bt);
     CU_ASSERT(rc == CHIDB_OK);
     
-    dbm * test_dbm = init_dbm(db);
+    chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+    stmt->db = db;
+    
+    dbm * test_dbm = init_dbm(stmt, 0);
 
     chidb_instruction inst;
     inst.instruction = DBM_OPENWRITE;
@@ -1568,7 +1577,11 @@ void test_9_12(void) {
   db = malloc(sizeof(chidb));
   BTree *bt;
 	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
-	dbm* test_dbm = init_dbm(db);
+	
+	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+  stmt->db = db;
+	
+	dbm* test_dbm = init_dbm(stmt, 0);
 	CU_ASSERT(test_dbm != NULL);
 	
 	integer_inst(test_dbm, 0, 2);
@@ -1647,7 +1660,11 @@ void test_9_13(void) {
   db = malloc(sizeof(chidb));
   BTree *bt;
 	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
-	dbm* test_dbm = init_dbm(db);
+	
+	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+  stmt->db = db;
+	
+	dbm* test_dbm = init_dbm(stmt, 0);
 	CU_ASSERT(test_dbm != NULL);
 	
 	integer_inst(test_dbm, 0, 2);
@@ -1804,7 +1821,7 @@ void test_9_14(void) {
 void test_9_15(void) {
 	//DBM_RESULTROW
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
-	stmt->input_dbm = init_dbm(NULL);
+	stmt->input_dbm = init_dbm(NULL, 0);
 	stmt->ins = (chidb_instruction *)malloc(10 * sizeof(chidb_instruction));
 	stmt->ins[4].instruction = DBM_RESULTROW;
 	stmt->ins[4].P1 = 0;
@@ -1852,17 +1869,44 @@ void test_10_2(void) {
   BTree *bt;
 	CU_ASSERT(chidb_Btree_open("singletable_singlepage.cdb", db, &(bt)) == CHIDB_OK);
 	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
-	dbm* test_dbm = init_dbm(db);
-	CU_ASSERT(test_dbm != NULL);
+	
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
+	dbm* test_dbm = init_dbm(stmt, 1);
+	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
-	init_lists(stmt);
+	//init_lists(stmt);
+	
+	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
 	
 	free(bt);
 	free(db);
 	free(stmt);
 }
+
+void test_10_3(void) {
+	//TEST MULTIPLE LEAVES
+	//TREE FLATTENING TEST
+	chidb *db;
+  db = malloc(sizeof(chidb));
+  BTree *bt;
+	CU_ASSERT(chidb_Btree_open("tableindex_multipage.cdb", db, &(bt)) == CHIDB_OK);
+	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
+	
+	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
+	stmt->db = db;
+	dbm* test_dbm = init_dbm(stmt,1);
+	CU_ASSERT(test_dbm != NULL);
+	stmt->input_dbm = test_dbm;
+	init_lists(stmt);
+	
+	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
+	
+	free(bt);
+	free(db);
+	free(stmt);
+}
+
 /*
       (NULL == CU_add_test(dbmTests, "11.1 - Print column name", test_11_1))  || 
       (NULL == CU_add_test(dbmTests, "11.2 - Print nrcols of select/insert", test_11_2)) ||
@@ -1892,7 +1936,7 @@ void test_11_5(void) {
 
 int init_tests_btree()
 {
-  CU_pSuite openexistingTests, loadnodeTests, createwriteTests, opennewTests, cellTests, findTests, insertnosplitTests, insertTests, indexTests, dbmTests, schemaLoadTests;
+  CU_pSuite openexistingTests, loadnodeTests, createwriteTests, opennewTests, cellTests, findTests, insertnosplitTests, insertTests, indexTests, dbmTests, schemaLoadTests, apiTests;
   
   /* add suites to the registry */
   if (
@@ -1906,7 +1950,8 @@ int init_tests_btree()
       NULL == (insertTests =        CU_add_suite("Step 7: Insertion with splitting", NULL, NULL))	||
       NULL == (indexTests =         CU_add_suite("Step 8: Supporting index B-Trees", NULL, NULL)) ||
       NULL == (dbmTests = 					CU_add_suite("Step 9: Testing DBM commands", NULL, NULL)) ||
-      NULL == (schemaLoadTests = 		CU_add_suite("Step 10: Schema loading tests", NULL, NULL))
+      NULL == (schemaLoadTests = 		CU_add_suite("Step 10: Schema loading tests", NULL, NULL)) || 
+      NULL == (apiTests = 					CU_add_suite("Step 11: API tests", NULL, NULL))
       ) 
     {
       CU_cleanup_registry();
@@ -1976,16 +2021,18 @@ int init_tests_btree()
       (NULL == CU_add_test(dbmTests, "9.14 - DBM_INSERT", test_9_14)) ||
       (NULL == CU_add_test(dbmTests, "9.15 - DBM_RESULTROW", test_9_15)) ||
       /* Schema loading tests */
+      
       (NULL == CU_add_test(schemaLoadTests, "10.1 - chidb_load_schema", test_10_1)) ||
-      (NULL == CU_add_test(dbmTests, "10.2 - Tree flattening test", test_10_2)) ||
-
+      (NULL == CU_add_test(schemaLoadTests, "10.2 - Tree flattening test", test_10_2)) ||
+      (NULL == CU_add_test(schemaLoadTests, "10.3 - Multi page tree load test", test_10_3)) ||
+			
       /* API tests */
 
-      (NULL == CU_add_test(dbmTests, "11.1 - Print column name", test_11_1))  || 
-      (NULL == CU_add_test(dbmTests, "11.2 - Print nrcols of select/insert", test_11_2)) ||
-      (NULL == CU_add_test(dbmTests, "11.3 - Print column type", test_11_3)) ||
-      (NULL == CU_add_test(dbmTests, "11.4 - Print int from col", test_11_4)) ||
-      (NULL == CU_add_test(dbmTests, "11.5 - Print str from col", test_11_5))
+      (NULL == CU_add_test(apiTests, "11.1 - Print column name", test_11_1))  || 
+      (NULL == CU_add_test(apiTests, "11.2 - Print nrcols of select/insert", test_11_2)) ||
+      (NULL == CU_add_test(apiTests, "11.3 - Print column type", test_11_3)) ||
+      (NULL == CU_add_test(apiTests, "11.4 - Print int from col", test_11_4)) ||
+      (NULL == CU_add_test(apiTests, "11.5 - Print str from col", test_11_5))
       )
     {
       CU_cleanup_registry();

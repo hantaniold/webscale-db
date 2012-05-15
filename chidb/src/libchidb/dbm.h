@@ -130,7 +130,7 @@ struct chidb_stmt {
 };
 
 //THIS WILL CREATE A NEW DBM STRUCT
-dbm * init_dbm(chidb *db);
+dbm * init_dbm(chidb_stmt *,uint8_t);
 
 //THIS LOADS IN THE TREES AS LISTS FOR NEXT AND PREV
 void init_lists(chidb_stmt *);
