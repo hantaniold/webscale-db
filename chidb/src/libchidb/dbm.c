@@ -637,21 +637,13 @@ int operation_string(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_rewind(dbm *input_dbm, chidb_instruction inst) {
-	input_dbm->cursors[inst.P1].cell_num = 0; 
-	input_dbm->cursors[inst.P1].touched = 1;
-	
-	input_dbm->cursors[inst.P1].curr_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
-	input_dbm->cursors[inst.P1].next_cell = (BTreeCell *)malloc(sizeof(BTreeCell));
-	
-	int retval = chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, 0, input_dbm->cursors[inst.P1].curr_cell);	
-	int retval2 = chidb_Btree_getCell(input_dbm->cursors[inst.P1].node, 1, input_dbm->cursors[inst.P1].next_cell);
-	if (retval2 != CHIDB_OK) {
-		input_dbm->cursors[inst.P1].next_cell = NULL;
-	}
-	if (retval == CHIDB_OK) {
+	if (input_dbm->cursors[inst.P1].touched == 1) {
+		input_dbm->cursors[inst.P1].pos = 0;
+		input_dbm->program_counter += 1;
 		return DBM_OK;
 	} else {
-		return DBM_CELL_NUMBER_BOUNDS;
+		input_dbm->program_counter = inst.P2;
+		return DBM_OK;
 	}
 }
 
@@ -878,15 +870,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			break;
 		}
 		case DBM_REWIND: {
-			if (operation_rewind(input_dbm, inst) == DBM_OK) {
-				input_dbm->program_counter += 1;
-				input_dbm->tick_result = DBM_OK;
-				return DBM_OK;
-			} else {
-				input_dbm->program_counter = inst.P2;
-				input_dbm->tick_result = DBM_OK;
-				return DBM_OK;
-			}
+			return operation_rewind(input_dbm, inst);
 			break;
 		}
 		case DBM_NEXT: {
