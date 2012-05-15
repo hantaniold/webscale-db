@@ -54,6 +54,7 @@ int chidb_load_schema(chidb * db) {
     BTreeNode * btn;
     BTreeCell * cell = calloc(1,sizeof(BTreeCell));
     chidb_Btree_getNodeByPage(db->bt, 1, &btn);
+    db->bt->schema_table = NULL;
     int schema_size = 0;
     int schema_row_index = 0;
     for (int i = 0; i < btn->n_cells; i++) {
@@ -339,14 +340,10 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 // Get the column number
                 int colnum;
                 for(int j = 0; j < ncols; j++) {
-                		//TODO: REENABLE
-                		//TODO: THE NEXT SEGFAULT HAPPENS HERE
-                		/* 
                     if(!strcmp(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[j].name)) {
                         colnum = j;
                         break;
                     }
-                    */
                 }
  
                 // Store the column value
