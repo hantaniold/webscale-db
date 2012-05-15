@@ -1843,18 +1843,7 @@ void test_10_1(void) {
 	
 }
 
-/*
-struct chidb_stmt {
-    chidb_instruction *ins;
-    int num_instructions;
-    DBRecord *record;
-    chidb *db;
-    SQLStatement *sql;
-    uint8_t initialized_dbm;
-    dbm *input_dbm;
-};
 
-*/
 
 void test_10_2(void) {
 	//TREE FLATTENING TEST
@@ -1869,6 +1858,7 @@ void test_10_2(void) {
 	stmt->db = db;
 	stmt->input_dbm = test_dbm;
 	init_lists(stmt);
+	
 	free(bt);
 	free(db);
 	free(stmt);
