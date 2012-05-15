@@ -114,6 +114,7 @@ struct dbm {
 	uint32_t num_lists;
 	BTreeCell ***cell_lists;
 	uint32_t *list_lengths;
+    SQLStatement * create_table;
 };
 
 typedef struct dbm dbm;
@@ -133,6 +134,7 @@ struct chidb_stmt {
     DBRecord *record;
     chidb *db;
     SQLStatement *sql;
+    SQLStatement * create_table;
     uint8_t initialized_dbm;
     dbm *input_dbm;
 };
