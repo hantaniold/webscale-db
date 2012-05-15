@@ -552,6 +552,10 @@ int chidb_column_int(chidb_stmt *stmt, int col)
 const char *chidb_column_text(chidb_stmt *stmt, int col)
 {
     char * retval;
+    int *len = (int *)malloc(sizeof(int));
+    chidb_DBRecord_getStringLength(stmt->record, col, len);
+    retval = (char *)malloc(sizeof(char) * (*len));
+    printf("LEN!!! %i\n", *len);
     chidb_DBRecord_getString(stmt->record, col, &retval);
-	return retval;
+		return retval;
 }

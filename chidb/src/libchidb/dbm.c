@@ -738,7 +738,7 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 	chidb_DBRecord_unpack(&(record), input_dbm->cell_lists[table_num][pos]->fields.tableLeaf.data);
 	int type = chidb_DBRecord_getType(record, inst.P2);
 	if (type == SQL_NULL) {
-		printf("USING NL VALUE\n");
+		//printf("USING NL VALUE\n");
 		input_dbm->registers[inst.P3].type = NL;
 		input_dbm->registers[inst.P3].data.int_val = NULL;
 		input_dbm->registers[inst.P3].data.str_val = NULL;
@@ -772,13 +772,13 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 		return DBM_OK;
 	}
 	if (type == SQL_TEXT) {
-		printf("STRING VALUE\n");
 		input_dbm->registers[inst.P3].type = STRING;
 		int *len = (int *)malloc(sizeof(int));
 		chidb_DBRecord_getStringLength(record, inst.P2, len);
 		input_dbm->registers[inst.P3].data.str_val = (char *)malloc((*len) * sizeof(char));
 		chidb_DBRecord_getString(record, inst.P2, &(input_dbm->registers[inst.P3].data.str_val));
 		input_dbm->registers[inst.P3].data_len = (size_t)(*len);
+		printf("STRING VALUE %s\n", input_dbm->registers[inst.P3].data.str_val);
 		free(len);
 		input_dbm->program_counter += 1;
 		return DBM_OK;
@@ -788,6 +788,12 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
+	/*
+	printf("ENTERED TICK\n");
+	printf("PROGRAM_COUNTER: %i\n", input_dbm->program_counter);
+	printf("INSTRUCTION: %i\n", inst.instruction);
+	printf("END TICK HEADER\n");
+	*/
 	switch (inst.instruction) {
 		case DBM_OPENWRITE:
 		case DBM_OPENREAD: {
@@ -831,7 +837,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			break;
 		}
 		case DBM_NEXT: 
-			printf("AT NEXT INSTRUCTION\n");
+			//printf("AT NEXT INSTRUCTION\n");
 			return operation_next(input_dbm, inst);
 		case DBM_PREV: 
 			return operation_prev(input_dbm, inst);
@@ -1094,7 +1100,8 @@ int generate_result_row(chidb_stmt *stmt) {
 				chidb_DBRecord_appendInt32(dbrb, stmt->input_dbm->registers[index].data.int_val);
 			break;
 			case STRING:
-				chidb_DBRecord_appendString(dbrb,  stmt->input_dbm->registers[index].data.str_val);
+				printf("APPEND STRING %s\n", stmt->input_dbm->registers[index].data.str_val);
+				chidb_DBRecord_appendString(dbrb, stmt->input_dbm->registers[index].data.str_val);
 			break;
 			case NL:
 				chidb_DBRecord_appendNull(dbrb);
@@ -1106,7 +1113,8 @@ int generate_result_row(chidb_stmt *stmt) {
 		}
 	}
 	chidb_DBRecord_finalize(dbrb, &(stmt->record));
-	free(dbrb);
+	stmt->input_dbm->program_counter += 1;
+	//free(dbrb);
 	return CHIDB_OK;
 }
 //EOF
