@@ -1919,6 +1919,35 @@ void test_11_1(void) {
 }
 
 void test_11_2(void) {
+    //Why does this not work. the parser does not fill in the struct
+    //when I do this
+    /*
+    char * insert_test2 = "INSERT INTO FOO VALUES ( 4 , 13 , 2 );\0";
+    char * insert_test = calloc(40,sizeof(char));
+    strcpy(insert_test,insert_test2);
+    chidb_stmt * stmt = calloc(1,sizeof(chidb_stmt));
+    SQLStatement * sql_stmt = calloc(1,sizeof(SQLStatement));
+    stmt->sql = sql_stmt;
+    CU_ASSERT(chidb_parser(insert_test, &sql_stmt) != CHIDB_EINVALIDSQL);
+    chidb_parser_printInsert(sql_stmt);
+    printf("type: %d\n",stmt->sql->type);
+    printf("col ct: %d\n",chidb_column_count(stmt));
+    CU_ASSERT(chidb_column_count(stmt) == 3);
+
+
+    char * select_test = "SELECT BOB FROM ANN;\0";
+    chidb_stmt * stmt2 = calloc(1,sizeof(chidb_stmt));
+    SQLStatement * sql_stmt2 = calloc(1,sizeof(SQLStatement));
+    stmt2->sql = sql_stmt2;
+    CU_ASSERT(chidb_parser(select_test, &sql_stmt2) != CHIDB_EINVALIDSQL);
+    printf("type: %d\n",stmt2->sql->type);
+    printf("col ct: %d\n",chidb_column_count(stmt2));
+    CU_ASSERT(chidb_column_count(stmt2) == 1);
+    free(stmt);
+    free(sql_stmt);
+    
+   */
+
 }
 
 void test_11_3(void) {
