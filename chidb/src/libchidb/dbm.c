@@ -831,6 +831,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			break;
 		}
 		case DBM_NEXT: 
+			printf("AT NEXT INSTRUCTION\n");
 			return operation_next(input_dbm, inst);
 		case DBM_PREV: 
 			return operation_prev(input_dbm, inst);
@@ -1066,6 +1067,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			break;
     }
 		case DBM_HALT:
+			printf("AT HALT STEP\n");
 			if (inst.P1 == 0) {
 				input_dbm->tick_result = DBM_OK;
 			} else {

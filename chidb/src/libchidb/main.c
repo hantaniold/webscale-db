@@ -494,12 +494,13 @@ int chidb_step(chidb_stmt *stmt)
 	if (result == DBM_HALT_STATE) {
 		//check which kind of  error has occured
 		//TODO: IMPLEMENT ERROR HANDING AND ERROR MESSAGE REPORTING
+		return CHIDB_ECONSTRAINT;
 	}
 	if (result == DBM_RESULT) {
 		//we have a result to put together
 		generate_result_row(stmt);
+		return CHIDB_ROW;
 	}
-	return CHIDB_OK;
 }
 
 int chidb_finalize(chidb_stmt *stmt)
