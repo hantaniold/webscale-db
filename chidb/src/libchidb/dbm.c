@@ -408,6 +408,101 @@ int operation_ge(dbm *input_dbm, chidb_instruction inst) {
 	}
 }
 
+int operation_idxgt(dbm *input_dbm, chidb_instruction inst) {
+    key_t val1;
+    switch(input_dbm->cursors[inst.P1].curr_cell->type) {
+        case PGTYPE_INDEX_INTERNAL:
+            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexInternal.keyPk;
+            break;
+        case PGTYPE_INDEX_LEAF:
+            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexLeaf.keyPk;
+            break;
+    }
+    key_t val2 = (key_t)input_dbm->registers[inst.P3].data.int_val;
+    
+    if(val1 > val2) {
+        input_dbm->program_counter = inst.P2;
+    } else {
+        input_dbm->program_counter += 1;
+    }
+    return DBM_OK;
+}
+
+int operation_idxge(dbm *input_dbm, chidb_instruction inst) {
+    key_t val1;
+    switch(input_dbm->cursors[inst.P1].curr_cell->type) {
+        case PGTYPE_INDEX_INTERNAL:
+            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexInternal.keyPk;
+            break;
+        case PGTYPE_INDEX_LEAF:
+            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexLeaf.keyPk;
+            break;
+    }
+    key_t val2 = (key_t)input_dbm->registers[inst.P3].data.int_val;
+    
+    if(val1 >= val2) {
+        input_dbm->program_counter = inst.P2;
+    } else {
+        input_dbm->program_counter += 1;
+    }
+    return DBM_OK;
+}
+
+int operation_idxlt(dbm *input_dbm, chidb_instruction inst) {
+    key_t val1;
+    switch(input_dbm->cursors[inst.P1].curr_cell->type) {
+        case PGTYPE_INDEX_INTERNAL:
+            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexInternal.keyPk;
+            break;
+        case PGTYPE_INDEX_LEAF:
+            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexLeaf.keyPk;
+            break;
+    }
+    key_t val2 = (key_t)input_dbm->registers[inst.P3].data.int_val;
+    
+    if(val1 < val2) {
+        input_dbm->program_counter = inst.P2;
+    } else {
+        input_dbm->program_counter += 1;
+    }
+    return DBM_OK;
+}
+
+int operation_idxle(dbm *input_dbm, chidb_instruction inst) {
+    key_t val1;
+    switch(input_dbm->cursors[inst.P1].curr_cell->type) {
+        case PGTYPE_INDEX_INTERNAL:
+            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexInternal.keyPk;
+            break;
+        case PGTYPE_INDEX_LEAF:
+            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexLeaf.keyPk;
+            break;
+    }
+    key_t val2 = (key_t)input_dbm->registers[inst.P3].data.int_val;
+    
+    if(val1 <= val2) {
+        input_dbm->program_counter = inst.P2;
+    } else {
+        input_dbm->program_counter += 1;
+    }
+    return DBM_OK;
+}
+
+int operation_idxkey(dbm *input_dbm, chidb_instruction inst) {
+    key_t key;
+    switch(input_dbm->cursors[inst.P1].curr_cell->type) {
+        case PGTYPE_INDEX_INTERNAL:
+            key = input_dbm->cursors[inst.P1].curr_cell->fields.indexInternal.keyPk;
+            break;
+        case PGTYPE_INDEX_LEAF:
+            key = input_dbm->cursors[inst.P1].curr_cell->fields.indexLeaf.keyPk;
+            break;
+    }
+    input_dbm->registers[inst.P2].data.int_val = (uint32_t)key;
+    return DBM_OK;
+}
+
+
 int operation_key(dbm *input_dbm, chidb_instruction inst) {
 	input_dbm->registers[inst.P2].type = INTEGER;
 	input_dbm->registers[inst.P2].data.int_val = (uint32_t)input_dbm->cursors[inst.P1].curr_cell->key;
@@ -832,16 +927,72 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			}
 			break;
 		}
-		case DBM_IDXGT:
+		case DBM_IDXGT: {
+			int retval = operation_idxgt(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_IDXLT:
+        }
+		case DBM_IDXGE: {
+			int retval = operation_idxge(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_IDXLE:
+        }
+		case DBM_IDXLT: {
+			int retval = operation_idxlt(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_IDXKEY:
+        }
+		case DBM_IDXLE: {
+			int retval = operation_idxle(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
-		case DBM_IDXINSERT:
+        }
+		case DBM_IDXKEY: {
+			int retval = operation_idxkey(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
+        }
+		case DBM_IDXINSERT: {
+			int retval = operation_idxinsert(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
+			break;
+        }
 		case DBM_CREATETABLE:
 			break;
 		case DBM_CREATEINDEX:
