@@ -592,6 +592,18 @@ int operation_idxkey(dbm *input_dbm, chidb_instruction inst) {
 }
 
 
+int operation_createtable(dbm * input_dbm, chidb_instruction inst) {
+    int res = chidb_Btree_newNode(dbm->db->bt, &input_dbm->registers[inst.P1].data.int_val,PGTYPE_TABLE_LEAF); 
+    if (res == CHIDB_OK) return DBM_OK;
+    return res;
+}
+
+int operation_createindex(dbm * input_dbm, chidb_instruction inst) {
+    int res = chidb_Btree_newNode(dbm->db->bt, &input_dbm->registers[inst.P1].data.int_val,PGTYPE_INDEX_LEAF);
+    if (res == CHIDB_OK) return DBM_OK;
+    return res;
+}
+
 int operation_key(dbm *input_dbm, chidb_instruction inst) {
 	input_dbm->registers[inst.P2].type = INTEGER;
 	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
@@ -1138,8 +1150,24 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			break;
 		}
 		case DBM_CREATETABLE:
+			int retval = operation_createtable(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
 		case DBM_CREATEINDEX:
+			int retval = operation_createindex(input_dbm, inst);
+			if (retval == DBM_OK) {
+				input_dbm->tick_result = DBM_OK;
+				return DBM_OK;
+			} else {
+				input_dbm->tick_result = retval;
+				return DBM_HALT_STATE;
+			}
 			break;
 		case DBM_SCOPY:{
 			int retval = operation_scopy(input_dbm, inst);
