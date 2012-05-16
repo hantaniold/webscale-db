@@ -90,7 +90,7 @@ void add_nodes(chidb_stmt *stmt, int table_num, BTreeNode *node) {
 		}
 	} else {
 		/*
-		printf("INVALID TYPE ERROR IN add_nodes\n");
+		printf("INVALID TYPE ERROR IN add_nodes\n");curr_cell
 		printf("INVALID TYPE OF: %i\n", node->type);
 		printf("INVALID table_num: %i\n", table_num);
 		printf("INVALID node ref: %i\n", node);
@@ -495,17 +495,11 @@ int operation_ge(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_idxgt(dbm *input_dbm, chidb_instruction inst) {
-    key_t val1;
-    switch(input_dbm->cursors[inst.P1].curr_cell->type) {
-        case PGTYPE_INDEX_INTERNAL:
-            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexInternal.keyPk;
-            break;
-        case PGTYPE_INDEX_LEAF:
-            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexLeaf.keyPk;
-            break;
-    }
-    key_t val2 = (key_t)input_dbm->registers[inst.P3].data.int_val;
-    
+		key_t key;
+    uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+    uint32_t pos =  input_dbm->cursors[inst.P1].pos;
+    int32_t val1 = input_dbm->cell_lists[table_num][pos];
+		int32_t val2 = input_dbm->registers[inst.P3].data.int_val;
     if(val1 > val2) {
         input_dbm->program_counter = inst.P2;
     } else {
@@ -515,17 +509,11 @@ int operation_idxgt(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_idxge(dbm *input_dbm, chidb_instruction inst) {
-    key_t val1;
-    switch(input_dbm->cursors[inst.P1].curr_cell->type) {
-        case PGTYPE_INDEX_INTERNAL:
-            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexInternal.keyPk;
-            break;
-        case PGTYPE_INDEX_LEAF:
-            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexLeaf.keyPk;
-            break;
-    }
-    key_t val2 = (key_t)input_dbm->registers[inst.P3].data.int_val;
-    
+    key_t key;
+    uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+    uint32_t pos =  input_dbm->cursors[inst.P1].pos;
+    int32_t val1 = input_dbm->cell_lists[table_num][pos];
+		int32_t val2 = input_dbm->registers[inst.P3].data.int_val;
     if(val1 >= val2) {
         input_dbm->program_counter = inst.P2;
     } else {
@@ -535,17 +523,11 @@ int operation_idxge(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_idxlt(dbm *input_dbm, chidb_instruction inst) {
-    key_t val1;
-    switch(input_dbm->cursors[inst.P1].curr_cell->type) {
-        case PGTYPE_INDEX_INTERNAL:
-            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexInternal.keyPk;
-            break;
-        case PGTYPE_INDEX_LEAF:
-            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexLeaf.keyPk;
-            break;
-    }
-    key_t val2 = (key_t)input_dbm->registers[inst.P3].data.int_val;
-    
+    key_t key;
+    uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+    uint32_t pos =  input_dbm->cursors[inst.P1].pos;
+    int32_t val1 = input_dbm->cell_lists[table_num][pos];
+		int32_t val2 = input_dbm->registers[inst.P3].data.int_val;
     if(val1 < val2) {
         input_dbm->program_counter = inst.P2;
     } else {
@@ -555,17 +537,11 @@ int operation_idxlt(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_idxle(dbm *input_dbm, chidb_instruction inst) {
-    key_t val1;
-    switch(input_dbm->cursors[inst.P1].curr_cell->type) {
-        case PGTYPE_INDEX_INTERNAL:
-            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexInternal.keyPk;
-            break;
-        case PGTYPE_INDEX_LEAF:
-            val1 = input_dbm->cursors[inst.P1].curr_cell->fields.indexLeaf.keyPk;
-            break;
-    }
-    key_t val2 = (key_t)input_dbm->registers[inst.P3].data.int_val;
-    
+    key_t key;
+    uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+    uint32_t pos =  input_dbm->cursors[inst.P1].pos;
+    int32_t val1 = input_dbm->cell_lists[table_num][pos];
+		int32_t val2 = input_dbm->registers[inst.P3].data.int_val;
     if(val1 <= val2) {
         input_dbm->program_counter = inst.P2;
     } else {
@@ -593,13 +569,15 @@ int operation_idxkey(dbm *input_dbm, chidb_instruction inst) {
 
 
 int operation_createtable(dbm * input_dbm, chidb_instruction inst) {
-    int res = chidb_Btree_newNode(dbm->db->bt, &input_dbm->registers[inst.P1].data.int_val,PGTYPE_TABLE_LEAF); 
-    if (res == CHIDB_OK) return DBM_OK;
+    int res = chidb_Btree_newNode(input_dbm->db->bt, &input_dbm->registers[inst.P1].data.int_val,PGTYPE_TABLE_LEAF); 
+    if (res == CHIDB_OK) {
+    	return DBM_OK;
+   	}
     return res;
 }
 
 int operation_createindex(dbm * input_dbm, chidb_instruction inst) {
-    int res = chidb_Btree_newNode(dbm->db->bt, &input_dbm->registers[inst.P1].data.int_val,PGTYPE_INDEX_LEAF);
+    int res = chidb_Btree_newNode(input_dbm->db->bt, &input_dbm->registers[inst.P1].data.int_val,PGTYPE_INDEX_LEAF);
     if (res == CHIDB_OK) return DBM_OK;
     return res;
 }
@@ -1150,7 +1128,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			}
 			break;
 		}
-		case DBM_CREATETABLE:
+		case DBM_CREATETABLE: {
 			int retval = operation_createtable(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
@@ -1160,7 +1138,8 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
-		case DBM_CREATEINDEX:
+		}
+		case DBM_CREATEINDEX: {
 			int retval = operation_createindex(input_dbm, inst);
 			if (retval == DBM_OK) {
 				input_dbm->tick_result = DBM_OK;
@@ -1170,6 +1149,7 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 				return DBM_HALT_STATE;
 			}
 			break;
+		}
 		case DBM_SCOPY:{
 			int retval = operation_scopy(input_dbm, inst);
 			if (retval == DBM_OK) {
