@@ -570,9 +570,7 @@ int operation_idxkey(dbm *input_dbm, chidb_instruction inst) {
 
 int operation_createtable(dbm * input_dbm, chidb_instruction inst) {
     int res = chidb_Btree_newNode(input_dbm->db->bt, &input_dbm->registers[inst.P1].data.int_val,PGTYPE_TABLE_LEAF); 
-    if (res == CHIDB_OK) {
-    	return DBM_OK;
-   	}
+    if (res == CHIDB_OK) return DBM_OK;
     return res;
 }
 
@@ -627,18 +625,29 @@ int operation_rewind(dbm *input_dbm, chidb_instruction inst) {
 
 //DBM_MAKERECORD
 int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
-	input_dbm->registers[inst.P2].type = RECORD;
-	input_dbm->registers[inst.P2].touched = 1;
-	input_dbm->registers[inst.P2].data.record_val = (DBRecord *)calloc(1, sizeof(DBRecord));
+	input_dbm->registers[inst.P3].type = RECORD;
+	input_dbm->registers[inst.P3].touched = 1;
+	input_dbm->registers[inst.P3].data.record_val = (DBRecord *)calloc(1, sizeof(DBRecord));
 	
 	DBRecordBuffer *dbrb = (DBRecordBuffer *)calloc(1, sizeof(DBRecordBuffer));
 	
 	chidb_DBRecord_create_empty(dbrb, inst.P2);
 	
+    int col_num = 0;
 	for (uint32_t i = inst.P1; i < inst.P1 + inst.P2; ++i) {
 		switch (input_dbm->registers[i].type) {
 			case INTEGER:
-				chidb_DBRecord_appendInt32(dbrb, input_dbm->registers[i].data.int_val);
+                switch ((input_dbm->create_table->query.createTable.cols + col_num)->type) {
+                    case SQL_INTEGER_1BYTE:
+				        chidb_DBRecord_appendInt8(dbrb, input_dbm->registers[i].data.int_val);
+                        break;
+                    case SQL_INTEGER_2BYTE:
+			    	    chidb_DBRecord_appendInt16(dbrb, input_dbm->registers[i].data.int_val);
+                        break;
+                    case SQL_INTEGER_4BYTE:
+        				chidb_DBRecord_appendInt32(dbrb, input_dbm->registers[i].data.int_val);
+                        break;
+                }
 			break;
 			case STRING:
 				chidb_DBRecord_appendString(dbrb,  input_dbm->registers[i].data.str_val);
@@ -651,9 +660,10 @@ int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
 			case RECORD:
 			break;
 		}
+        col_num++;
 	}
 	
-	chidb_DBRecord_finalize(dbrb, &(input_dbm->registers[inst.P2].data.record_val));
+	chidb_DBRecord_finalize(dbrb, &(input_dbm->registers[inst.P3].data.record_val));
 	
 	free(dbrb);
 	input_dbm->program_counter += 1;	
@@ -773,10 +783,12 @@ int operation_scopy(dbm *input_dbm, chidb_instruction inst) {
 
 //DBM_INSERT
 int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
-	if (input_dbm->registers[inst.P2].type == RECORD) {
-		int retval = chidb_Btree_insertInTable(input_dbm->db->bt, (npage_t)input_dbm->cursors[inst.P1].root_page_num, (key_t)input_dbm->registers[inst.P3].data.int_val, input_dbm->registers[inst.P2].data.record_val->data, (uint16_t)input_dbm->registers[inst.P2].data.record_val->data_len);
-		input_dbm->program_counter += 1;
-		if (retval == CHIDB_EDUPLICATE) {
+	printf("WELCOME TO HELL!\n");
+    input_dbm->program_counter += 1;
+    if (input_dbm->registers[inst.P2].type == RECORD) {
+			int retval = chidb_Btree_insertInTable(input_dbm->db->bt, (npage_t)input_dbm->cursors[inst.P1].root_page_num, (key_t)input_dbm->registers[inst.P3].data.int_val, input_dbm->registers[inst.P2].data.record_val->data, (uint16_t)input_dbm->registers[inst.P2].data.record_val->data_len);
+		printf("RETURN VAL FROM HELL: %i\n", retval);
+    if (retval == CHIDB_EDUPLICATE) {
 			return DBM_DUPLICATE_KEY;
 		}
 		if (retval == CHIDB_ENOMEM) {
@@ -785,7 +797,7 @@ int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
 		if (retval == CHIDB_EIO) {
 			return DBM_IO_ERROR;
 		}
-	} else {
+    } else {
 		return DBM_INVALID_TYPE;
 	}
 	return DBM_OK;

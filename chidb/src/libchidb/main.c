@@ -110,6 +110,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
     // Check that the query is valid against our schema table
     int root_page;
     int ncols;
+    int pk;
     SchemaTableRow *schema_row = NULL;
     SQLStatement *create_table_stmt;
     switch(sql_stmt->type) {
@@ -132,6 +133,9 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
 
             // Check that all column names are valid
             chidb_parser(schema_row->sql, &create_table_stmt);
+
+            pk = create_table_stmt->query.createTable.pk; 
+
             for(int i = 0; i < sql_stmt->query.select.select_ncols; i++) {
                 int match = 0;
                 for(int j = 0; j < create_table_stmt->query.createTable.ncols; j++) {
@@ -189,20 +193,23 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                     break;
                 }
             }
-            if(!schema_row)
-                return CHIDB_EINVALIDSQL;
+            //if(!schema_row)
+                //return CHIDB_EINVALIDSQL;
 
             // Check that the right number of values are being inserted
             chidb_parser(schema_row->sql, &create_table_stmt);
-            if(sql_stmt->query.insert.nvalues != create_table_stmt->query.createTable.ncols)
-                return CHIDB_EINVALIDSQL;
+            
+            pk = create_table_stmt->query.createTable.pk;
+
+            //if(sql_stmt->query.insert.nvalues != create_table_stmt->query.createTable.ncols)
+                //return CHIDB_EINVALIDSQL;
 
             ncols = create_table_stmt->query.createTable.ncols;
             
             // Check value types
             for(int i = 0; i < sql_stmt->query.insert.nvalues; i++) {
-                if(sql_stmt->query.insert.values[i].type != create_table_stmt->query.createTable.cols[i].type)
-                    return CHIDB_EINVALIDSQL;
+                //if(sql_stmt->query.insert.values[i].type != create_table_stmt->query.createTable.cols[i].type)
+                    //return CHIDB_EINVALIDSQL;
             }
             break;
         }
@@ -215,6 +222,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
     (*stmt)->record = NULL;
     (*stmt)->db = db;
     (*stmt)->sql = sql_stmt;
+    (*stmt)->create_table = create_table_stmt;
 
     switch(sql_stmt->type) {
         case STMT_SELECT:
@@ -246,21 +254,29 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
 
             // Select columns (0, 1, or 2) from WHERE clause
             for(int i = 0; i < sql_stmt->query.select.where_nconds; i++) {
-                // Add first column of WHERE clause (always present)
-                int colnum;
-                for(int j = 0; j < ncols; j++) {
-                    if(!strcmp(sql_stmt->query.select.where_conds[0].op1.name, create_table_stmt->query.createTable.cols[j].name)) {
-                        colnum = j;
-                        break;
+               int colnum;
+               if(!strcmp(sql_stmt->query.select.where_conds[i].op1.name, create_table_stmt->query.createTable.cols[pk].name)) {
+                    (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                    (*stmt)->ins[numlines].instruction = DBM_KEY;        // Get a primary key value
+                    (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
+                    (*stmt)->ins[numlines].P2 = ++rmax;                  // into a new register
+                    numlines++;             
+                } else {
+                    // Add first column of WHERE clause (always present)                             
+                    for(int j = 0; j < ncols; j++) {
+                        if(!strcmp(sql_stmt->query.select.where_conds[0].op1.name, create_table_stmt->query.createTable.cols[j].name)) {
+                            colnum = j;
+                            break;
+                        }
                     }
+                    (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                    (*stmt)->ins[numlines].instruction = DBM_COLUMN;     // Get a column value
+                    (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
+                    (*stmt)->ins[numlines].P2 = colnum;                  // from column number colnum
+                    (*stmt)->ins[numlines].P3 = ++rmax;                  // into a new register
+                    numlines++;
                 }
-                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-                (*stmt)->ins[numlines].instruction = DBM_COLUMN;     // Get a column value
-                (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
-                (*stmt)->ins[numlines].P2 = colnum;                  // from column number colnum
-                (*stmt)->ins[numlines].P3 = ++rmax;                  // into a new register
-                numlines++;
-                
+
                 // Check if the operation is unary or binary
                 if(sql_stmt->query.select.where_conds[0].op != OP_ISNULL && sql_stmt->query.select.where_conds[0].op != OP_ISNOTNULL) {
                     // Store any literals if the operation is binary
@@ -333,6 +349,16 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
 
             // Select columns in main clause
             for(int i = 0; i < sql_stmt->query.select.select_ncols; i++) {
+                if(!strcmp(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[pk].name)) {
+                    (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                    (*stmt)->ins[numlines].instruction = DBM_KEY;        // Get a primary key value
+                    (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
+                    (*stmt)->ins[numlines].P2 = ++rmax;                  // into a new register
+                    numlines++;
+
+                    continue;
+                }
+                
                 // Get the column number
                 int colnum;
                 for(int j = 0; j < ncols; j++) {
@@ -435,7 +461,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
             (*stmt)->ins[numlines].instruction = DBM_MAKERECORD;             // Create a new record
             (*stmt)->ins[numlines].P1 = 1;                                   // beginning with register 1
-            (*stmt)->ins[numlines].P2 = rmax - 1;                            // with this many columns
+            (*stmt)->ins[numlines].P2 = rmax;                                // with this many columns
             (*stmt)->ins[numlines].P3 = ++rmax;                              // and store the record in a new register
             numlines++;
             
@@ -444,7 +470,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             (*stmt)->ins[numlines].instruction = DBM_INSERT;                 // Insert the new record
             (*stmt)->ins[numlines].P1 = 0;                                   // using cursor 0
             (*stmt)->ins[numlines].P2 = rmax;                                // with the record in register rmax
-            (*stmt)->ins[numlines].P3 = create_table_stmt->query.createTable.pk; // with primary key in column pk in this register
+            (*stmt)->ins[numlines].P3 = create_table_stmt->query.createTable.pk+1; // with primary key in column pk in this register
             numlines++;
 
             // Close the cursor
@@ -460,6 +486,10 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             numlines++;
 
             (*stmt)->num_instructions = numlines;
+
+            for(int i = 0; i < (*stmt)->num_instructions; i++) {
+                printf("Instruction: %i      Arguments: %i %i %i %i\n", (*stmt)->ins[i].instruction, (*stmt)->ins[i].P1, (*stmt)->ins[i].P2, (*stmt)->ins[i].P3, (*stmt)->ins[i].P4);
+            }
 
             break;
         }
@@ -483,6 +513,7 @@ int chidb_step(chidb_stmt *stmt)
                 }
             }
         }
+        stmt->input_dbm->create_table = stmt->create_table;
 		stmt->initialized_dbm = 1;
 	}
 	//INSTRUCTION LOOP
@@ -494,7 +525,11 @@ int chidb_step(chidb_stmt *stmt)
 	if (result == DBM_HALT_STATE) {
 		//check which kind of  error has occured
 		//TODO: IMPLEMENT ERROR HANDING AND ERROR MESSAGE REPORTING
-		return CHIDB_ECONSTRAINT;
+		if (stmt->input_dbm->tick_result == DBM_OK) {
+            return CHIDB_DONE;
+        }else {
+            return CHIDB_ECONSTRAINT;
+        }
 	}
 	if (result == DBM_RESULT) {
 		//we have a result to put together
