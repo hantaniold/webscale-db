@@ -81,16 +81,11 @@ int reset_dbm(dbm *input_dbm) {
 
 void add_nodes(chidb_stmt *stmt, int table_num, BTreeNode *node) {
 	if (node->type == PGTYPE_TABLE_LEAF || node->type == PGTYPE_INDEX_LEAF) {
-		//printf("TABLE NUM: %i\n", table_num);
 		uint32_t start = *(stmt->input_dbm->list_lengths + table_num);
 		*(stmt->input_dbm->list_lengths + table_num) += node->n_cells;
-		//printf("MY VAL: %i\n", *(stmt->input_dbm->list_lengths + table_num));
 		*(stmt->input_dbm->cell_lists + table_num) = realloc(*(stmt->input_dbm->cell_lists + table_num), sizeof(BTreeCell *) * *(stmt->input_dbm->list_lengths + table_num));
-		//printf("REALLOC VAL: %i\n", *(stmt->input_dbm->cell_lists + table_num));
 		uint32_t end = *(stmt->input_dbm->list_lengths + table_num);
 		int ecounter = 0;
-		//printf("START: %i\n", start);
-		//printf("END: %i\n", end);
 		for (int i = start; i < end; ++i) {
 			*(*(stmt->input_dbm->cell_lists + table_num) + i) = (BTreeCell *)malloc(sizeof(BTreeCell));
 			chidb_Btree_getCell(node, (ncell_t)ecounter, *(*(stmt->input_dbm->cell_lists + table_num) + i));
@@ -134,19 +129,15 @@ void recursive_construct(chidb_stmt *stmt, BTree * bt, npage_t page_num, int tab
 
 void init_lists(chidb_stmt *stmt) {
 	stmt->input_dbm->cell_lists = (BTreeCell ***)malloc(sizeof(BTreeCell **) * stmt->db->bt->schema_table_size);
-	//printf("SCHEMA TABLE SIZE: %i\n", stmt->db->bt->schema_table_size);
 	stmt->input_dbm->list_lengths = (uint32_t *)malloc(sizeof(uint32_t) * stmt->db->bt->schema_table_size);
 	stmt->input_dbm->num_lists = stmt->db->bt->schema_table_size; 
 	for (int i = 0; i < stmt->db->bt->schema_table_size; ++i) {
-		//printf("I VALUE FOR LOOP: %i\n", i);
 		*(stmt->input_dbm->cell_lists + i) = NULL;
 		*(stmt->input_dbm->list_lengths + i) = 0;
 		int root_page_num = stmt->db->bt->schema_table[i]->root_page;
 		BTreeNode *root_node;
 		chidb_Btree_getNodeByPage(stmt->db->bt, root_page_num, &(root_node));
-		//printf("LOADING PAGE: %i with type %i\n", root_page_num, root_node->type);
 		if (root_node->type == PGTYPE_TABLE_INTERNAL) {
-			//printf("INTERNAL CELL\n");
 			int n_cells = root_node->n_cells;
 			for (int j = 0; j < n_cells; ++j) {
 				BTreeCell *curr = (BTreeCell *)malloc(sizeof(BTreeCell));
@@ -273,9 +264,6 @@ int operation_eq(dbm *input_dbm, chidb_instruction inst) {
 	}
 }
 int operation_ne(dbm *input_dbm, chidb_instruction inst) {
-    printf("REG NUM 1: %i | REG NUM 2: %i\n", inst.P1, inst.P3);
-    printf("REG TYPE 1: %i | REG TYPE 2: %i\n", input_dbm->registers[inst.P1].type, input_dbm->registers[inst.P3].type);
-    printf("REG VAL 1: %i | REG VAL 2 %i\n", input_dbm->registers[inst.P1].data.int_val, input_dbm->registers[inst.P3].data.int_val);
 	if (input_dbm->registers[inst.P1].type == input_dbm->registers[inst.P3].type) {
 		switch (input_dbm->registers[inst.P1].type) {
 			case INTEGER:
@@ -633,7 +621,7 @@ int operation_db_record(dbm *input_dbm, chidb_instruction inst) {
 	DBRecordBuffer *dbrb = (DBRecordBuffer *)calloc(1, sizeof(DBRecordBuffer));
 	
 	chidb_DBRecord_create_empty(dbrb, inst.P2);
-	
+		
     int col_num = 0;
 	for (uint32_t i = inst.P1; i < inst.P1 + inst.P2; ++i) {
 		switch (input_dbm->registers[i].type) {
@@ -784,11 +772,12 @@ int operation_scopy(dbm *input_dbm, chidb_instruction inst) {
 
 //DBM_INSERT
 int operation_insert_record(dbm *input_dbm, chidb_instruction inst) {
-	printf("WELCOME TO HELL!\n");
     input_dbm->program_counter += 1;
+    
     if (input_dbm->registers[inst.P2].type == RECORD) {
-			int retval = chidb_Btree_insertInTable(input_dbm->db->bt, (npage_t)input_dbm->cursors[inst.P1].root_page_num, (key_t)input_dbm->registers[inst.P3].data.int_val, input_dbm->registers[inst.P2].data.record_val->data, (uint16_t)input_dbm->registers[inst.P2].data.record_val->data_len);
-		printf("RETURN VAL FROM HELL: %i\n", retval);
+    	uint8_t *packed_record;
+    	 chidb_DBRecord_pack(input_dbm->registers[inst.P2].data.record_val, &(packed_record));
+			int retval = chidb_Btree_insertInTable(input_dbm->db->bt, (npage_t)input_dbm->cursors[inst.P1].root_page_num, (key_t)input_dbm->registers[inst.P3].data.int_val, packed_record, (uint16_t)input_dbm->registers[inst.P2].data.record_val->packed_len);
     if (retval == CHIDB_EDUPLICATE) {
 			return DBM_DUPLICATE_KEY;
 		}
@@ -812,9 +801,7 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 	chidb_DBRecord_unpack(&(record), input_dbm->cell_lists[table_num][pos]->fields.tableLeaf.data);
 	
 	int type = chidb_DBRecord_getType(record, inst.P2);
-	printf("SELECTING COLUMN NUMBER %i with type %i\n", inst.P2, type);
 	if (type == SQL_NULL) {
-		//printf("USING NL VALUE\n");
 		input_dbm->registers[inst.P3].type = NL;
 		input_dbm->registers[inst.P3].data.int_val = NULL;
 		input_dbm->registers[inst.P3].data.str_val = NULL;
@@ -824,27 +811,21 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 	if (type == SQL_INTEGER_1BYTE || type == SQL_INTEGER_2BYTE || type == SQL_INTEGER_4BYTE) {
 		input_dbm->registers[inst.P3].type = INTEGER;
 		if (type == SQL_INTEGER_1BYTE) {
-			printf("USING 1 BYTE\n");
 			int8_t *v = (int8_t *)malloc(sizeof(int8_t));
 			chidb_DBRecord_getInt8(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
-			printf("INTEGER VALUE %i\n", *v);
 			free(v);
 		}
 		if (type == SQL_INTEGER_2BYTE) {
-			printf("USING 2 BYTE\n");
 			int16_t *v = (int16_t *)malloc(sizeof(int16_t));
 			chidb_DBRecord_getInt16(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
-			printf("INTEGER VALUE %i\n", *v);
 			free(v);
 		}
 		if (type == SQL_INTEGER_4BYTE) {
-			printf("USING 4 BYTE\n");
 			int32_t *v = (int32_t *)malloc(sizeof(int32_t));
 			chidb_DBRecord_getInt32(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
-			printf("INTEGER VALUE %i stored in register %i\n", *v, inst.P3);
 			free(v);
 		}
 		input_dbm->program_counter += 1;
@@ -857,7 +838,6 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 		input_dbm->registers[inst.P3].data.str_val = (char *)malloc((*len) * sizeof(char));
 		chidb_DBRecord_getString(record, inst.P2, &(input_dbm->registers[inst.P3].data.str_val));
 		input_dbm->registers[inst.P3].data_len = (size_t)(*len);
-		printf("STRING VALUE %s places in register %in", input_dbm->registers[inst.P3].data.str_val, inst.P3);
 		free(len);
 		input_dbm->program_counter += 1;
 		return DBM_OK;
@@ -867,12 +847,6 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
-	/*
-	printf("ENTERED TICK\n");
-	printf("PROGRAM_COUNTER: %i\n", input_dbm->program_counter);
-	printf("INSTRUCTION: %i\n", inst.instruction);
-	printf("END TICK HEADER\n");
-	*/
 	switch (inst.instruction) {
 		case DBM_OPENWRITE:
 		case DBM_OPENREAD: {
@@ -917,7 +891,6 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			break;
 		}
 		case DBM_NEXT: 
-			//printf("AT NEXT INSTRUCTION\n");
 			return operation_next(input_dbm, inst);
 		case DBM_PREV: 
 			return operation_prev(input_dbm, inst);
@@ -978,8 +951,6 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 		}
 		case DBM_RESULTROW: {
 			input_dbm->tick_result = DBM_OK;
-			printf("RESULT ROW COMMAND P1 %i\n", inst.P1);
-			printf("RESULT ROW COMMAND P2 %i\n", inst.P2);
 			return DBM_RESULT;
 		}
 		case DBM_MAKERECORD: {
@@ -1175,7 +1146,6 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 			break;
     }
 		case DBM_HALT:
-			printf("AT HALT STEP\n");
 			if (inst.P1 == 0) {
 				input_dbm->tick_result = DBM_OK;
 			} else {
@@ -1191,8 +1161,6 @@ int tick_dbm(dbm *input_dbm, chidb_instruction inst) {
 int generate_result_row(chidb_stmt *stmt) {
 	chidb_instruction curr_inst = *(stmt->ins + stmt->input_dbm->program_counter);
 	chidb_instruction next_inst = *(stmt->ins + stmt->input_dbm->program_counter + 1);
-	printf("CURR_INST P1: %i\n", curr_inst.P1);
-	printf("NEXT_INST P1: %i\n", next_inst.P1);
 	uint32_t index = curr_inst.P1;
 	uint32_t bound = index + curr_inst.P2;
 	
@@ -1200,13 +1168,11 @@ int generate_result_row(chidb_stmt *stmt) {
 	chidb_DBRecord_create_empty(dbrb, curr_inst.P2);
 		
 	for (; index < bound; ++index) {
-		printf("REGISTER %i TYPE: %i\n", index, stmt->input_dbm->registers[index].type);
 		switch (stmt->input_dbm->registers[index].type) {
 			case INTEGER:
 				chidb_DBRecord_appendInt32(dbrb, stmt->input_dbm->registers[index].data.int_val);
 			break;
 			case STRING:
-				printf("APPEND STRING %s\n", stmt->input_dbm->registers[index].data.str_val);
 				chidb_DBRecord_appendString(dbrb, stmt->input_dbm->registers[index].data.str_val);
 			break;
 			case NL:
@@ -1218,7 +1184,6 @@ int generate_result_row(chidb_stmt *stmt) {
 			break;
 		}
 	}
-	printf("\n");
 	chidb_DBRecord_finalize(dbrb, &(stmt->record));
 	stmt->input_dbm->program_counter += 1;
 	//free(dbrb);

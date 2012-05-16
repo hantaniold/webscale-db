@@ -407,10 +407,11 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             numlines++;
 
             (*stmt)->num_instructions = numlines;
-
+						/*
             for(int i = 0; i < (*stmt)->num_instructions; i++) {
                 printf("Instruction: %i      Arguments: %i %i %i %i\n", (*stmt)->ins[i].instruction, (*stmt)->ins[i].P1, (*stmt)->ins[i].P2, (*stmt)->ins[i].P3, (*stmt)->ins[i].P4);
             }
+            */
 
             break;
         }
@@ -486,10 +487,11 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             numlines++;
 
             (*stmt)->num_instructions = numlines;
-
+						/*
             for(int i = 0; i < (*stmt)->num_instructions; i++) {
                 printf("Instruction: %i      Arguments: %i %i %i %i\n", (*stmt)->ins[i].instruction, (*stmt)->ins[i].P1, (*stmt)->ins[i].P2, (*stmt)->ins[i].P3, (*stmt)->ins[i].P4);
             }
+            */
 
             break;
         }
@@ -527,6 +529,15 @@ int chidb_step(chidb_stmt *stmt)
 		if (tr == DBM_OK) {
             return CHIDB_DONE;
     }else {
+    	if (tr == CHIDB_EDUPLICATE) {
+				return DBM_DUPLICATE_KEY;
+			}
+			if (tr == CHIDB_ENOMEM) {
+				return DBM_MEMORY_ERROR;
+			}
+			if (tr == CHIDB_EIO) {
+				return DBM_IO_ERROR;
+			}
     	if (tr == DBM_INVALID_INSTRUCTION) {
     		return CHIDB_EMISUSE;
     	}
@@ -605,7 +616,6 @@ const char *chidb_column_text(chidb_stmt *stmt, int col)
     int *len = (int *)malloc(sizeof(int));
     chidb_DBRecord_getStringLength(stmt->record, col, len);
     retval = (char *)malloc(sizeof(char) * (*len));
-    printf("LEN!!! %i\n", *len);
     chidb_DBRecord_getString(stmt->record, col, &retval);
 		return retval;
 }
