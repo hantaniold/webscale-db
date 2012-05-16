@@ -90,12 +90,6 @@ struct dbm_cursor {
 	uint32_t pos;
 	BTreeNode *node;
 	uint32_t root_page_num;
-	
-	//THESE ARE ALL DEPRECATED
-	BTreeCell *curr_cell;
-	BTreeCell *prev_cell;
-	BTreeCell *next_cell;
-	//END DEPRECATED
 	uint32_t table_num;
 	uint32_t cols;
 };
@@ -154,6 +148,8 @@ int reset_dbm(dbm *);
 int tick_dbm(dbm *input_dbm, chidb_instruction stmt);
 
 int generate_result_row(chidb_stmt *stmt);
+
+int clear_lists(dbm* input_dbm);
 
 
 

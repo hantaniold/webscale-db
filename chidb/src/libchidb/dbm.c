@@ -25,9 +25,6 @@ dbm * init_dbm(chidb_stmt *stmt, uint8_t stopLoad) {
 	for (int i = 0; i < DBM_MAX_CURSORS; ++i) {
 		input_dbm->cursors[i].touched = 0;
 		input_dbm->cursors[i].node = NULL;
-		input_dbm->cursors[i].curr_cell = NULL;
-		input_dbm->cursors[i].prev_cell = NULL;
-		input_dbm->cursors[i].next_cell = NULL;
 	}
 	if (stmt != NULL && stopLoad != 0) {
 		init_lists(stmt);
@@ -37,7 +34,18 @@ dbm * init_dbm(chidb_stmt *stmt, uint8_t stopLoad) {
 }
 
 int operation_cursor_close(dbm *input_dbm, uint32_t cursor_id) {
+	//free(input_dbm->cursors[cursor_id].node);
 	return DBM_OK;
+}
+
+int clear_lists(dbm *input_dbm) {
+	for (int i = 0; i < input_dbm->num_lists; ++i) {
+		for (int j = 0; j < *(input_dbm->list_lengths + i); ++j) {
+			free(input_dbm->cell_lists[i][j]);
+		}
+		free(input_dbm->cell_lists[i]);
+	}
+	free(input_dbm->cell_lists);
 }
 
 //TODO: THIS NEEDS TO CLEAN Up ALL ALLOCATED CURSORS
@@ -88,13 +96,6 @@ void add_nodes(chidb_stmt *stmt, int table_num, BTreeNode *node) {
 			chidb_Btree_getCell(node, (ncell_t)ecounter, *(*(stmt->input_dbm->cell_lists + table_num) + i));
 			ecounter += 1;	
 		}
-	} else {
-		/*
-		printf("INVALID TYPE ERROR IN add_nodes\n");curr_cell
-		printf("INVALID TYPE OF: %i\n", node->type);
-		printf("INVALID table_num: %i\n", table_num);
-		printf("INVALID node ref: %i\n", node);
-		*/
 	}
 }
 
