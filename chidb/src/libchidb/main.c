@@ -523,13 +523,24 @@ int chidb_step(chidb_stmt *stmt)
 	} while (result == DBM_OK);
 	
 	if (result == DBM_HALT_STATE) {
-		//check which kind of  error has occured
-		//TODO: IMPLEMENT ERROR HANDING AND ERROR MESSAGE REPORTING
-		if (stmt->input_dbm->tick_result == DBM_OK) {
+		uint32_t tr = stmt->input_dbm->tick_result;
+		if (tr == DBM_OK) {
             return CHIDB_DONE;
-        }else {
-            return CHIDB_ECONSTRAINT;
-        }
+    }else {
+    	if (tr == DBM_INVALID_INSTRUCTION) {
+    		return CHIDB_EMISUSE;
+    	}
+    	if (tr == DBM_IO_ERROR || tr == DBM_OPENRW_ERROR || tr == DBM_MEMORY_FREE_ERROR || tr == DBM_MEMORY_ERROR || tr == DBM_CELL_NUMBER_BOUNDS) {
+    		return CHIDB_EIO;
+    	}
+    	if (tr == DBM_REGISTER_TYPE_MISMATCH || tr == DBM_DATA_REGISTER_LENGTH_MISMATCH || tr == DBM_INVALID_TYPE) {
+    		return CHIDB_EMISMATCH;
+    	}
+    	if (tr == DBM_DUPLICATE_KEY) {
+    		return CHIDB_ECONSTRAINT;
+    	}
+    	return CHIDB_ECONSTRAINT;
+    }
 	}
 	if (result == DBM_RESULT) {
 		//we have a result to put together
