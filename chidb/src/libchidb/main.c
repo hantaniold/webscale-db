@@ -264,7 +264,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 } else {
                     // Add first column of WHERE clause (always present)                             
                     for(int j = 0; j < ncols; j++) {
-                        if(!strcmp(sql_stmt->query.select.where_conds[0].op1.name, create_table_stmt->query.createTable.cols[j].name)) {
+                        if(!strcmp(sql_stmt->query.select.where_conds[i].op1.name, create_table_stmt->query.createTable.cols[j].name)) {
                             colnum = j;
                             break;
                         }
@@ -278,25 +278,25 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 }
 
                 // Check if the operation is unary or binary
-                if(sql_stmt->query.select.where_conds[0].op != OP_ISNULL && sql_stmt->query.select.where_conds[0].op != OP_ISNOTNULL) {
+                if(sql_stmt->query.select.where_conds[i].op != OP_ISNULL && sql_stmt->query.select.where_conds[i].op != OP_ISNOTNULL) {
                     // Store any literals if the operation is binary
-                    if(sql_stmt->query.select.where_conds[0].op2Type == OP2_INT) {
+                    if(sql_stmt->query.select.where_conds[i].op2Type == OP2_INT) {
                         (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
                         (*stmt)->ins[numlines].instruction = DBM_INTEGER;                                // Integer type
-                        (*stmt)->ins[numlines].P1 = sql_stmt->query.select.where_conds[0].op2.integer;   // Store the integer
+                        (*stmt)->ins[numlines].P1 = sql_stmt->query.select.where_conds[i].op2.integer;   // Store the integer
                         (*stmt)->ins[numlines].P2 = ++rmax;                                              // into a new register
                         numlines++;
-                    } else if(sql_stmt->query.select.where_conds[0].op2Type == OP2_STR) {
+                    } else if(sql_stmt->query.select.where_conds[i].op2Type == OP2_STR) {
                         (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
                         (*stmt)->ins[numlines].instruction = DBM_STRING;                                             // String type
-                        (*stmt)->ins[numlines].P1 = strlen(sql_stmt->query.select.where_conds[0].op2.string) + 1;    // Store the length
+                        (*stmt)->ins[numlines].P1 = strlen(sql_stmt->query.select.where_conds[i].op2.string) + 1;    // Store the length
                         (*stmt)->ins[numlines].P2 = ++rmax;                                                          // into a new register
-                        (*stmt)->ins[numlines].P4 = sql_stmt->query.select.where_conds[0].op2.string;		         // and keep a ptr
+                        (*stmt)->ins[numlines].P4 = sql_stmt->query.select.where_conds[i].op2.string;		         // and keep a ptr
                         numlines++;
-                    } else if(sql_stmt->query.select.where_conds[0].op2Type == OP2_COL) {
+                    } else if(sql_stmt->query.select.where_conds[i].op2Type == OP2_COL) {
                         // Store the second column, if there is one
                         for(int j = 0; j < ncols; j++) {
-                            if(!strcmp(sql_stmt->query.select.where_conds[0].op2.col.name, create_table_stmt->query.createTable.cols[j].name)) {
+                            if(!strcmp(sql_stmt->query.select.where_conds[i].op2.col.name, create_table_stmt->query.createTable.cols[j].name)) {
                                 colnum = j;
                                 break;
                             }
@@ -318,7 +318,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
 
                 // Store the conditional jump instruction
                 (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-                switch(sql_stmt->query.select.where_conds[0].op) {
+                switch(sql_stmt->query.select.where_conds[i].op) {
                     case OP_EQ:
                     case OP_ISNULL:
                         (*stmt)->ins[numlines].instruction = DBM_NE;
@@ -341,8 +341,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                         break;
                 }
                 (*stmt)->ins[numlines].P1 = rmax - 1;                // Get the register of the first operand
-                (*stmt)->ins[numlines].P2 = sql_stmt->query.select.select_ncols + numlines + 2;
-                                                                // Get the jump address
+                (*stmt)->ins[numlines].P2 = 0;                       // Placeholder for jump address (set later)
                 (*stmt)->ins[numlines].P3 = rmax - 0;                // Get the register of the second operand
                 numlines++;
             }
@@ -390,6 +389,20 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             (*stmt)->ins[numlines].P1 = 0;                       // with cursor 0
             (*stmt)->ins[numlines].P2 = 3;                       // return to instruction 3
             numlines++;
+
+            // Update any conditional jumps to point to this previous NEXT instruction
+            if(sql_stmt->query.select.where_nconds > 0) {
+                for(int i = 0; i < numlines; i++) {
+                    if((*stmt)->ins[i].instruction == DBM_EQ ||
+                       (*stmt)->ins[i].instruction == DBM_NE ||
+                       (*stmt)->ins[i].instruction == DBM_LT ||
+                       (*stmt)->ins[i].instruction == DBM_LE ||
+                       (*stmt)->ins[i].instruction == DBM_GT ||
+                       (*stmt)->ins[i].instruction == DBM_GE) {
+                        (*stmt)->ins[i].P2 = numlines - 1;
+                    }
+                }
+            }
 
             // Close the cursor
             (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
