@@ -640,7 +640,7 @@ const char *chidb_column_name(chidb_stmt* stmt, int col)
             if(stmt->sql->query.select.select_ncols != SELECT_ALL) {
                 return (stmt->sql->query.select.select_cols + col)->name;
             } else {
-                return stmt->create_table->query.createTable.cols[0].name;
+                return stmt->create_table->query.createTable.cols[col].name;
             }
             break;
     }
