@@ -617,7 +617,7 @@ int chidb_column_count(chidb_stmt *stmt)
 {
     switch (stmt->sql->type) {
         case (STMT_SELECT):
-            return stmt->sql->query.select.select_ncols;
+            return (stmt->sql->query.select.select_ncols == SELECT_ALL) ? stmt->create_table->query.createTable.ncols : stmt->sql->query.select.select_ncols;
             break;
         case (STMT_INSERT):
             return stmt->sql->query.insert.nvalues;
@@ -637,7 +637,11 @@ const char *chidb_column_name(chidb_stmt* stmt, int col)
 {
     switch(stmt->sql->type) {
         case (STMT_SELECT):
-            return (stmt->sql->query.select.select_cols + col)->name;
+            if(stmt->sql->query.select.select_ncols != SELECT_ALL) {
+                return (stmt->sql->query.select.select_cols + col)->name;
+            } else {
+                return stmt->create_table->query.createTable.cols[0].name;
+            }
             break;
     }
 	return "";
