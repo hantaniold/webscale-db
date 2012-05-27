@@ -484,59 +484,107 @@ int operation_ge(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_idxgt(dbm *input_dbm, chidb_instruction inst) {
-		key_t key;
-    uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
-    uint32_t pos =  input_dbm->cursors[inst.P1].pos;
-    int32_t val1 = input_dbm->cell_lists[table_num][pos];
-		int32_t val2 = input_dbm->registers[inst.P3].data.int_val;
-    if(val1 > val2) {
-        input_dbm->program_counter = inst.P2;
-    } else {
-        input_dbm->program_counter += 1;
-    }
-    return DBM_OK;
+	if (input_dbm->registers[inst.P3].type == INTEGER) {
+		uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+		uint32_t pos =  input_dbm->cursors[inst.P1].pos;
+		int32_t PKey;
+		switch(input_dbm->cell_lists[table_num][pos]->type) {
+			case PGTYPE_INDEX_INTERNAL:
+				PKey = input_dbm->cell_lists[table_num][pos]->fields.indexInternal.keyPk;	
+			break;
+			case PGTYPE_INDEX_LEAF:
+				PKey = input_dbm->cell_lists[table_num][pos]->fields.indexLeaf.keyPk;
+			break;
+			default:
+				return DBM_INVALID_TYPE;
+		}
+		if (PKey > input_dbm->registers[inst.P3].data.int_val) {
+			input_dbm->program_counter = inst.P2;
+		} else {
+			input_dbm->program_counter += 1;
+		}
+		return DBM_OK;
+	} else {
+		return DBM_REGISTER_TYPE_MISMATCH;
+	}    
 }
 
 int operation_idxge(dbm *input_dbm, chidb_instruction inst) {
-    key_t key;
-    uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
-    uint32_t pos =  input_dbm->cursors[inst.P1].pos;
-    int32_t val1 = input_dbm->cell_lists[table_num][pos];
-		int32_t val2 = input_dbm->registers[inst.P3].data.int_val;
-    if(val1 >= val2) {
-        input_dbm->program_counter = inst.P2;
-    } else {
-        input_dbm->program_counter += 1;
-    }
-    return DBM_OK;
+	if (input_dbm->registers[inst.P3].type == INTEGER) {
+		uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+		uint32_t pos =  input_dbm->cursors[inst.P1].pos;
+		int32_t PKey;
+		switch(input_dbm->cell_lists[table_num][pos]->type) {
+			case PGTYPE_INDEX_INTERNAL:
+				PKey = input_dbm->cell_lists[table_num][pos]->fields.indexInternal.keyPk;	
+			break;
+			case PGTYPE_INDEX_LEAF:
+				PKey = input_dbm->cell_lists[table_num][pos]->fields.indexLeaf.keyPk;
+			break;
+			default:
+				return DBM_INVALID_TYPE;
+		}
+		if (PKey >= input_dbm->registers[inst.P3].data.int_val) {
+			input_dbm->program_counter = inst.P2;
+		} else {
+			input_dbm->program_counter += 1;
+		}
+		return DBM_OK;
+	} else {
+		return DBM_REGISTER_TYPE_MISMATCH;
+	}
 }
 
-int operation_idxlt(dbm *input_dbm, chidb_instruction inst) {
-    key_t key;
-    uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
-    uint32_t pos =  input_dbm->cursors[inst.P1].pos;
-    int32_t val1 = input_dbm->cell_lists[table_num][pos];
-		int32_t val2 = input_dbm->registers[inst.P3].data.int_val;
-    if(val1 < val2) {
-        input_dbm->program_counter = inst.P2;
-    } else {
-        input_dbm->program_counter += 1;
-    }
-    return DBM_OK;
+int operation_idxlt(dbm *input_dbm, chidb_instruction inst) {	
+	if (input_dbm->registers[inst.P3].type == INTEGER) {
+		uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+		uint32_t pos =  input_dbm->cursors[inst.P1].pos;
+		int32_t PKey;
+		switch(input_dbm->cell_lists[table_num][pos]->type) {
+			case PGTYPE_INDEX_INTERNAL:
+				PKey = input_dbm->cell_lists[table_num][pos]->fields.indexInternal.keyPk;	
+			break;
+			case PGTYPE_INDEX_LEAF:
+				PKey = input_dbm->cell_lists[table_num][pos]->fields.indexLeaf.keyPk;
+			break;
+			default:
+				return DBM_INVALID_TYPE;
+		}
+		if (PKey < input_dbm->registers[inst.P3].data.int_val) {
+			input_dbm->program_counter = inst.P2;
+		} else {
+			input_dbm->program_counter += 1;
+		}
+		return DBM_OK;
+	} else {
+		return DBM_REGISTER_TYPE_MISMATCH;
+	}
 }
 
 int operation_idxle(dbm *input_dbm, chidb_instruction inst) {
-    key_t key;
-    uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
-    uint32_t pos =  input_dbm->cursors[inst.P1].pos;
-    int32_t val1 = input_dbm->cell_lists[table_num][pos];
-		int32_t val2 = input_dbm->registers[inst.P3].data.int_val;
-    if(val1 <= val2) {
-        input_dbm->program_counter = inst.P2;
-    } else {
-        input_dbm->program_counter += 1;
-    }
-    return DBM_OK;
+	if (input_dbm->registers[inst.P3].type == INTEGER) {
+		uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
+		uint32_t pos =  input_dbm->cursors[inst.P1].pos;
+		int32_t PKey;
+		switch(input_dbm->cell_lists[table_num][pos]->type) {
+			case PGTYPE_INDEX_INTERNAL:
+				PKey = input_dbm->cell_lists[table_num][pos]->fields.indexInternal.keyPk;	
+			break;
+			case PGTYPE_INDEX_LEAF:
+				PKey = input_dbm->cell_lists[table_num][pos]->fields.indexLeaf.keyPk;
+			break;
+			default:
+				return DBM_INVALID_TYPE;
+		}
+		if (PKey <= input_dbm->registers[inst.P3].data.int_val) {
+			input_dbm->program_counter = inst.P2;
+		} else {
+			input_dbm->program_counter += 1;
+		}
+		return DBM_OK;
+	} else {
+		return DBM_REGISTER_TYPE_MISMATCH;
+	}
 }
 
 int operation_idxkey(dbm *input_dbm, chidb_instruction inst) {
@@ -552,7 +600,8 @@ int operation_idxkey(dbm *input_dbm, chidb_instruction inst) {
             key = input_dbm->cell_lists[table_num][pos]->fields.indexLeaf.keyPk;
             break;
     }
-    input_dbm->registers[inst.P2].data.int_val = (uint32_t)key;
+    input_dbm->registers[inst.P2].type = INTEGER;
+    input_dbm->registers[inst.P2].data.int_val = (int32_t)key;
     return DBM_OK;
 }
 
@@ -765,8 +814,26 @@ int operation_idxinsert(dbm *input_dbm, chidb_instruction inst) {
 }
 
 int operation_scopy(dbm *input_dbm, chidb_instruction inst) {
-  input_dbm->registers[inst.P2] = input_dbm->registers[inst.P1];
-
+	input_dbm->registers[inst.P2].type = input_dbm->registers[inst.P1].type;
+  
+	switch (input_dbm->registers[inst.P1].type) {
+  		case INTEGER:
+			input_dbm->registers[inst.P2].data.int_val = input_dbm->registers[inst.P1].data.int_val;
+		break;
+		case STRING:
+			input_dbm->registers[inst.P2].data_len = input_dbm->registers[inst.P1].data_len;
+			input_dbm->registers[inst.P2].data.str_val = input_dbm->registers[inst.P1].data.str_val;
+		break;
+		case BINARY:
+                        input_dbm->registers[inst.P2].data_len = input_dbm->registers[inst.P1].data_len;
+                        input_dbm->registers[inst.P2].data.bin_val = input_dbm->registers[inst.P1].data.bin_val;
+		break;
+		case NL:
+		break;
+		case RECORD:
+			input_dbm->registers[inst.P2].data.record_val = input_dbm->registers[inst.P1].data.record_val;
+		break;
+  	}
   return DBM_OK;
 }
 
