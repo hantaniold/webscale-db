@@ -12,7 +12,7 @@
 */
 
 //THIS WILL CREATE A NEW DBM STRUCT
-dbm * init_dbm(chidb_stmt *stmt, uint8_t stopLoad) {
+dbm * init_dbm(chidb_stmt *stmt, uint8_t stopLoad, uint8_t forceLoad) {
 	dbm * input_dbm = (dbm *)calloc(1, sizeof(dbm));
 	if (stmt != NULL) {
 		input_dbm->db = stmt->db;
@@ -26,11 +26,19 @@ dbm * init_dbm(chidb_stmt *stmt, uint8_t stopLoad) {
 		input_dbm->cursors[i].touched = 0;
 		input_dbm->cursors[i].node = NULL;
 	}
-	if (stmt != NULL && stopLoad != 0) {
+	if ((stmt != NULL && stopLoad != 0) || (forceLoad == 1)) {
 		init_lists(stmt);
 	}
 	reset_dbm(input_dbm);
 	return input_dbm;
+}
+
+int get_table_size(dbm* input_dbm, int32_t table_num) {
+	if (table_num >= 0 && table_num < input_dbm->num_lists) {
+		return *(input_dbm->list_lengths + table_num);
+	} else  {
+		return -1;
+	}	
 }
 
 int operation_cursor_close(dbm *input_dbm, uint32_t cursor_id) {

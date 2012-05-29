@@ -1158,7 +1158,7 @@ void halt_inst(dbm *input_dbm, uint32_t error_code, char *error_message) {
 
 void test_9_1(void)
 {
-	dbm* test_dbm = init_dbm(NULL, 0);
+	dbm* test_dbm = init_dbm(NULL, 0, 0);
 	printf("\nTest DBM_INTEGER...\n");
 	integer_inst(test_dbm, 10, 21678);
 	reset_assert(test_dbm);
@@ -1183,7 +1183,7 @@ void test_9_1(void)
 
 void test_9_2(void) {
 	//DBM_EQ
-	dbm* test_dbm = init_dbm(NULL, 0);
+	dbm* test_dbm = init_dbm(NULL, 0, 0);
 	string_inst(test_dbm, 100, "charles\0");
 	string_inst(test_dbm, 200, "charles\0");
 	eq_inst(test_dbm, 100, 7, 200);
@@ -1254,7 +1254,7 @@ void test_9_2(void) {
 }
 void test_9_3(void) {
 	//DBM_NE
-	dbm* test_dbm = init_dbm(NULL, 0);
+	dbm* test_dbm = init_dbm(NULL, 0, 0);
 
     integer_inst(test_dbm, 0, 123);
     integer_inst(test_dbm, 1, 44);
@@ -1318,7 +1318,7 @@ void test_9_3(void) {
 
 void test_9_4(void) {
 	//DBM_LT
-	dbm* test_dbm = init_dbm(NULL, 0);
+	dbm* test_dbm = init_dbm(NULL, 0, 0);
 	integer_inst(test_dbm, 0, 123);
 	integer_inst(test_dbm, 1, 44);
 	lt_inst(test_dbm, 0, 42, 1);
@@ -1360,7 +1360,7 @@ void test_9_4(void) {
 }
 void test_9_5(void) {
 	//DBM_LT
-	dbm* test_dbm = init_dbm(NULL, 0);
+	dbm* test_dbm = init_dbm(NULL, 0, 0);
 	integer_inst(test_dbm, 0, 123);
 	integer_inst(test_dbm, 1, 44);
 	le_inst(test_dbm, 0, 42, 1);
@@ -1402,7 +1402,7 @@ void test_9_5(void) {
 }
 void test_9_6(void) {
 	//DBM_GT
-	dbm* test_dbm = init_dbm(NULL, 0);
+	dbm* test_dbm = init_dbm(NULL, 0, 0);
 	integer_inst(test_dbm, 0, 123);
 	integer_inst(test_dbm, 1, 44);
 	gt_inst(test_dbm, 0, 42, 1);
@@ -1444,7 +1444,7 @@ void test_9_6(void) {
 }
 void test_9_7(void) {
 	//DBM_GE
-	dbm* test_dbm = init_dbm(NULL, 0);
+	dbm* test_dbm = init_dbm(NULL, 0, 0 );
 	integer_inst(test_dbm, 0, 123);
 	integer_inst(test_dbm, 1, 44);
 	ge_inst(test_dbm, 0, 42, 1);
@@ -1486,7 +1486,7 @@ void test_9_7(void) {
 }
 void test_9_8(void) {
 	//DBM_HALT
-	dbm* test_dbm = init_dbm(NULL, 0);
+	dbm* test_dbm = init_dbm(NULL, 0 , 0);
 	halt_inst(test_dbm, 0, NULL);
 	
 	reset_assert(test_dbm);
@@ -1531,7 +1531,7 @@ void test_9_9(void) {
 	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
-	dbm* test_dbm = init_dbm(stmt, 1);
+	dbm* test_dbm = init_dbm(stmt, 1, 0);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
 	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
@@ -1565,7 +1565,7 @@ void test_9_10(void) {
 	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
-	dbm* test_dbm = init_dbm(stmt, 1);
+	dbm* test_dbm = init_dbm(stmt, 1, 0);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
 	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
@@ -1603,7 +1603,7 @@ void test_9_12(void) {
 	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
-	dbm* test_dbm = init_dbm(stmt, 1);
+	dbm* test_dbm = init_dbm(stmt, 1, 0);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
 	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
@@ -1654,7 +1654,7 @@ void test_9_13(void) {
 	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
-	dbm* test_dbm = init_dbm(stmt, 1);
+	dbm* test_dbm = init_dbm(stmt, 1, 0);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
 	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
@@ -1718,7 +1718,7 @@ void test_9_14(void) {
 void test_9_15(void) {
 	//DBM_RESULTROW
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
-	stmt->input_dbm = init_dbm(NULL, 0);
+	stmt->input_dbm = init_dbm(NULL, 0, 0);
 	stmt->ins = (chidb_instruction *)malloc(10 * sizeof(chidb_instruction));
 	stmt->ins[4].instruction = DBM_RESULTROW;
 	stmt->ins[4].P1 = 0;
@@ -1755,7 +1755,7 @@ void test_9_16(void) {
 	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
-	dbm* test_dbm = init_dbm(stmt, 1);
+	dbm* test_dbm = init_dbm(stmt, 1, 0);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
 	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
@@ -1812,7 +1812,7 @@ void test_9_17(void) {
 	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
-	dbm* test_dbm = init_dbm(stmt, 1);
+	dbm* test_dbm = init_dbm(stmt, 1, 0);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
 	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
@@ -1902,7 +1902,7 @@ void test_9_18(void) {
 	CU_ASSERT(chidb_load_schema(db) == CHIDB_OK);
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
-	dbm* test_dbm = init_dbm(stmt, 1);
+	dbm* test_dbm = init_dbm(stmt, 1, 0);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
 	CU_ASSERT(stmt->input_dbm->cell_lists[0][2]->key == 27500);
@@ -2035,7 +2035,7 @@ void test_10_1(void) {
 	
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
-	dbm* test_dbm = init_dbm(stmt, 1);
+	dbm* test_dbm = init_dbm(stmt, 1, 0);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
 	//init_lists(stmt);
@@ -2061,7 +2061,7 @@ void test_10_2(void) {
 	
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
-	dbm* test_dbm = init_dbm(stmt, 1);
+	dbm* test_dbm = init_dbm(stmt, 1, 0);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
 	//init_lists(stmt);
@@ -2085,7 +2085,7 @@ void test_10_3(void) {
 	
 	chidb_stmt *stmt = (chidb_stmt *)malloc(sizeof(chidb_stmt));
 	stmt->db = db;
-	dbm* test_dbm = init_dbm(stmt,1);
+	dbm* test_dbm = init_dbm(stmt,1, 0);
 	CU_ASSERT(test_dbm != NULL);
 	stmt->input_dbm = test_dbm;
 	CU_ASSERT(*(stmt->input_dbm->list_lengths + 0) == 2048);

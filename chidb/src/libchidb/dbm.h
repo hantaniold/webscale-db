@@ -134,7 +134,7 @@ struct chidb_stmt {
 };
 
 //THIS WILL CREATE A NEW DBM STRUCT
-dbm * init_dbm(chidb_stmt *,uint8_t);
+dbm * init_dbm(chidb_stmt *,uint8_t, uint8_t);
 
 //THIS LOADS IN THE TREES AS LISTS FOR NEXT AND PREV
 void init_lists(chidb_stmt *);
@@ -151,5 +151,6 @@ int generate_result_row(chidb_stmt *stmt);
 
 int clear_lists(dbm* input_dbm);
 
-
+//NOTE: you must call init_dbm before this call - otherwise the program with explode
+int get_table_size(dbm* input_dbm, int32_t table_num);
 
