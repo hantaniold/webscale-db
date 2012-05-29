@@ -548,7 +548,10 @@ int chidb_step(chidb_stmt *stmt)
 	if (stmt->initialized_dbm == 0) {
 		//dbm needs to be initialized
 		stmt->input_dbm = init_dbm(stmt, 1, 0);
-		init_lists(stmt);
+		init_lists(stmt);	
+		stmt->initialized_dbm = 1;
+	}
+	stmt->input_dbm->create_table = stmt->create_table;
         if (stmt->sql->type == STMT_INSERT) {
             for (int i = 0; i < stmt->db->bt->schema_table_size; i++) {
                 if (strcmp(stmt->sql->query.insert.table,stmt->db->bt->schema_table[i]->item_name) == 0) {
@@ -556,9 +559,6 @@ int chidb_step(chidb_stmt *stmt)
                 }
             }
         }
-        stmt->input_dbm->create_table = stmt->create_table;
-		stmt->initialized_dbm = 1;
-	}
 	//INSTRUCTION LOOP
 	uint32_t result = 0;
 	do {
