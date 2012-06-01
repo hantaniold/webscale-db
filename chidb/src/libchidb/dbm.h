@@ -66,11 +66,17 @@
 #define DBM_HALT (31)
 
 enum dbm_register_type {INTEGER, STRING, BINARY, NL, RECORD};
-
+//FOR INTERNAL DBM USE ONLY
 typedef enum dbm_register_type dbm_register_type;
+
+enum dbm_register_integer_sub_type {INT8, INT16, INT32};
+typedef enum dbm_register_integer_sub_type dbm_register_integer_sub_type;
+
+
 
 struct dbm_register {
 	dbm_register_type type;
+	dbm_register_integer_sub_type int_type;
 	size_t data_len; //TO BE USED WHEN STORING STRINGS AND BINARY VALUES
 	uint8_t touched;
 	union internal_data{
@@ -96,6 +102,24 @@ struct dbm_cursor {
 
 typedef struct dbm_cursor dbm_cursor;
 
+struct table_data {
+    char *name;
+    int num_cols;
+    int start_reg;
+    int num_cols_selected;
+    int pk;
+    int root;
+    SQLStatement *create;
+};
+typedef struct table_data tabledata;
+
+struct table_list {
+    int num_tables;
+    int num_cols;
+    tabledata *tables;
+};
+typedef struct table_list table_l;
+
 struct dbm {
 	uint32_t program_counter;
 	uint32_t tick_result; //stores the result of the last tick operation - used for error tracking
@@ -108,7 +132,12 @@ struct dbm {
 	uint32_t num_lists;
 	BTreeCell ***cell_lists;
 	uint32_t *list_lengths;
-    SQLStatement * create_table;
+	
+	//DEPRECATED
+  SQLStatement * create_table;
+  //REPLACED WITH:
+  table_l *table_list; //table list
+  
 };
 
 typedef struct dbm dbm;
@@ -128,28 +157,15 @@ struct chidb_stmt {
     DBRecord *record;
     chidb *db;
     SQLStatement *sql;
+    
+    //DEPRECATED:
     SQLStatement * create_table;
+    //REPLACED WITH:
+    table_l *table_list; //table list
+    
     uint8_t initialized_dbm;
     dbm *input_dbm;
 };
-
-struct table_data {
-    char *name;
-    int num_cols;
-    int start_reg;
-    int num_cols_selected;
-    int pk;
-    int root;
-    SQLStatement *create;
-};
-typedef struct table_data tabledata;
-
-struct table_list {
-    int num_tables;
-    int num_cols;
-    tabledata *tables;
-};
-typedef struct table_list table_l;
 
 //THIS WILL CREATE A NEW DBM STRUCT
 dbm * init_dbm(chidb_stmt *,uint8_t, uint8_t);

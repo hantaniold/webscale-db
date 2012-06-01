@@ -254,6 +254,9 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 break;
         }
     }
+    
+    //set the table_l of the statement for use by the dbm
+    (*stmt)->table_list = tablelist;
 
     // Sort the table struct
     // TODO
@@ -604,14 +607,18 @@ int chidb_step(chidb_stmt *stmt)
 		init_lists(stmt);	
 		stmt->initialized_dbm = 1;
 	}
-	stmt->input_dbm->create_table = stmt->create_table;
-        if (stmt->sql->type == STMT_INSERT) {
-            for (int i = 0; i < stmt->db->bt->schema_table_size; i++) {
-                if (strcmp(stmt->sql->query.insert.table,stmt->db->bt->schema_table[i]->item_name) == 0) {
-                    stmt->input_dbm->table_root = stmt->db->bt->schema_table[i]->root_page;
-                }
-            }
-        }
+	
+	//DEPRECATED
+	//stmt->input_dbm->create_table = stmt->create_table;
+	stmt->input_dbm->table_list = stmt->table_list;
+	
+  if (stmt->sql->type == STMT_INSERT) {
+  	for (int i = 0; i < stmt->db->bt->schema_table_size; i++) {
+    	if (strcmp(stmt->sql->query.insert.table,stmt->db->bt->schema_table[i]->item_name) == 0) {
+      	stmt->input_dbm->table_root = stmt->db->bt->schema_table[i]->root_page;
+      }
+    }
+  }
 	//INSTRUCTION LOOP
 	uint32_t result = 0;
 	do {

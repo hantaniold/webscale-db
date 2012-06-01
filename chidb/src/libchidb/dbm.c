@@ -610,6 +610,7 @@ int operation_idxkey(dbm *input_dbm, chidb_instruction inst) {
     }
     input_dbm->registers[inst.P2].type = INTEGER;
     input_dbm->registers[inst.P2].data.int_val = (int32_t)key;
+    input_dbm->registers[inst.P2].int_type = INT32;
     return DBM_OK;
 }
 
@@ -631,6 +632,7 @@ int operation_key(dbm *input_dbm, chidb_instruction inst) {
 	uint32_t table_num = input_dbm->cursors[inst.P1].table_num;
 	uint32_t pos = input_dbm->cursors[inst.P1].pos;
 	input_dbm->registers[inst.P2].data.int_val = (int32_t)input_dbm->cell_lists[table_num][pos]->key;
+	input_dbm->registers[inst.P2].int_type = INT32;
 	input_dbm->registers[inst.P2].touched = 0;
 	return DBM_OK;
 }
@@ -638,6 +640,7 @@ int operation_key(dbm *input_dbm, chidb_instruction inst) {
 int operation_integer(dbm *input_dbm, chidb_instruction inst) {
 	input_dbm->registers[inst.P2].type = INTEGER;
 	input_dbm->registers[inst.P2].data.int_val = inst.P1;
+	input_dbm->registers[inst.P2].int_type = INT32;
 	input_dbm->registers[inst.P2].touched = 0;
 	return DBM_OK;
 }
@@ -827,14 +830,15 @@ int operation_scopy(dbm *input_dbm, chidb_instruction inst) {
 	switch (input_dbm->registers[inst.P1].type) {
   		case INTEGER:
 			input_dbm->registers[inst.P2].data.int_val = input_dbm->registers[inst.P1].data.int_val;
+			input_dbm->registers[inst.P2].int_type = input_dbm->registers[inst.P1].int_type;
 		break;
 		case STRING:
 			input_dbm->registers[inst.P2].data_len = input_dbm->registers[inst.P1].data_len;
 			input_dbm->registers[inst.P2].data.str_val = input_dbm->registers[inst.P1].data.str_val;
 		break;
 		case BINARY:
-                        input_dbm->registers[inst.P2].data_len = input_dbm->registers[inst.P1].data_len;
-                        input_dbm->registers[inst.P2].data.bin_val = input_dbm->registers[inst.P1].data.bin_val;
+    	input_dbm->registers[inst.P2].data_len = input_dbm->registers[inst.P1].data_len;
+      input_dbm->registers[inst.P2].data.bin_val = input_dbm->registers[inst.P1].data.bin_val;
 		break;
 		case NL:
 		break;
@@ -889,18 +893,21 @@ int operation_column(dbm *input_dbm, chidb_instruction inst) {
 			int8_t *v = (int8_t *)malloc(sizeof(int8_t));
 			chidb_DBRecord_getInt8(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
+			input_dbm->registers[inst.P3].int_type = INT8;
 			free(v);
 		}
 		if (type == SQL_INTEGER_2BYTE) {
 			int16_t *v = (int16_t *)malloc(sizeof(int16_t));
 			chidb_DBRecord_getInt16(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
+			input_dbm->registers[inst.P3].int_type = INT16;
 			free(v);
 		}
 		if (type == SQL_INTEGER_4BYTE) {
 			int32_t *v = (int32_t *)malloc(sizeof(int32_t));
 			chidb_DBRecord_getInt32(record, inst.P2, v);
 			input_dbm->registers[inst.P3].data.int_val = (int32_t)(*v);
+			input_dbm->registers[inst.P3].int_type = INT32;
 			free(v);
 		}
 		input_dbm->program_counter += 1;
