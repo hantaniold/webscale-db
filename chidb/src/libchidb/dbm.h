@@ -136,6 +136,8 @@ struct chidb_stmt {
 struct table_data {
     char *name;
     int num_cols;
+    int start_reg;
+    int num_cols_selected;
     int pk;
     int root;
     SQLStatement *create;
@@ -144,6 +146,7 @@ typedef struct table_data tabledata;
 
 struct table_list {
     int num_tables;
+    int num_cols;
     tabledata *tables;
 };
 typedef struct table_list table_l;

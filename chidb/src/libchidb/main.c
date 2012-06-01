@@ -229,9 +229,10 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
     (*stmt)->create_table = create_table_stmt;
 
     // Initialize the table list struct
+    table_l *tablelist = malloc(sizeof(table_l));
     if(sql_stmt->type == STMT_SELECT) {
-        table_l *tablelist = malloc(sizeof(tablelist));
         tablelist->num_tables = sql_stmt->query.select.from_ntables;
+        tablelist->num_cols = 0;
         tablelist->tables = calloc(sql_stmt->query.select.from_ntables, sizeof(tabledata));
 
         // Add table data to the table list
@@ -245,6 +246,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                     chidb_parser(sr->sql, &(tablelist->tables[i].create));
                     tablelist->tables[i].num_cols = tablelist->tables[i].create->query.createTable.ncols;
                     tablelist->tables[i].pk = tablelist->tables[i].create->query.createTable.pk;
+                    tablelist->num_cols += tablelist->tables[i].create->query.createTable.ncols;
                     break;
                 }
             }
@@ -262,54 +264,63 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             int numlines = 0;
             int rmax = 0;
 
-            // Store the page number
-            (*stmt)->ins = malloc(sizeof(chidb_instruction));
-            (*stmt)->ins[numlines].instruction = DBM_INTEGER;    // Integer type
-            (*stmt)->ins[numlines].P1 = root_page;               // Store the root page
-            (*stmt)->ins[numlines].P2 = 0;                       // into register 0
-            numlines++;
+            for(int t = 0; t < tablelist->num_tables; t++) {
+                // Store the page number
+                (*stmt)->ins = malloc(sizeof(chidb_instruction));
+                (*stmt)->ins[numlines].instruction = DBM_INTEGER;     // Integer type
+                (*stmt)->ins[numlines].P1 = tablelist->tables[t].root;// Store the root page
+                (*stmt)->ins[numlines].P2 = t;                        // into register t
+                numlines++;
 
-            // Open the B-Tree
-            for(int i = 0; i < sql_stmt->query.select.from_ntables; i++) {
-                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));  // TODO: Unfinished
-                (*stmt)->ins[numlines].instruction = DBM_OPENREAD;  // Open a B-Tree
-                (*stmt)->ins[numlines].P1 = 0;                       // with cursor 0
-                (*stmt)->ins[numlines].P2 = 0;                       // on the page in register 0
-                (*stmt)->ins[numlines].P3 = ncols;                   // having ncols columns
+                // Open the B-Tree
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                (*stmt)->ins[numlines].instruction = DBM_OPENREAD;          // Open a B-Tree
+                (*stmt)->ins[numlines].P1 = t;                              // with cursor t
+                (*stmt)->ins[numlines].P2 = t;                              // on the page in register t
+                (*stmt)->ins[numlines].P3 = tablelist->tables[t].num_cols;  // having num_cols columns
+                numlines++;
+
+                // Rewind the B-Tree
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                (*stmt)->ins[numlines].instruction = DBM_REWIND;     // Rewind to the beginning of the B-Tree
+                (*stmt)->ins[numlines].P1 = t;                       // using cursor t
+                (*stmt)->ins[numlines].P2 = -1;                      // and if the table is empty, jump to CLOSE
                 numlines++;
             }
 
-            // Rewind the B-Tree
-            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-            (*stmt)->ins[numlines].instruction = DBM_REWIND;     // Rewind to the beginning of the B-Tree
-            (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
-            (*stmt)->ins[numlines].P2 = -1;                      // and if the table is empty, jump to CLOSE
-            numlines++;
+            int nextjmp = numlines;
 
             // Select columns (0, 1, or 2) from WHERE clause
             for(int i = 0; i < sql_stmt->query.select.where_nconds; i++) {
-               int colnum;
-               if(!strcmp(sql_stmt->query.select.where_conds[i].op1.name, create_table_stmt->query.createTable.cols[pk].name)) {
-                    (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-                    (*stmt)->ins[numlines].instruction = DBM_KEY;        // Get a primary key value
-                    (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
-                    (*stmt)->ins[numlines].P2 = ++rmax;                  // into a new register
-                    numlines++;             
-                } else {
-                    // Add first column of WHERE clause (always present)                             
-                    for(int j = 0; j < ncols; j++) {
-                        if(!strcmp(sql_stmt->query.select.where_conds[i].op1.name, create_table_stmt->query.createTable.cols[j].name)) {
-                            colnum = j;
-                            break;
+               int isPK = 0;
+
+               for(int t = 0; t < tablelist->num_tables; t++) {
+                    if(!strcmp(sql_stmt->query.select.where_conds[i].op1.name, tablelist->tables[t].create->query.createTable.cols[tablelist->tables[t].pk].name)) {
+                        (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                        (*stmt)->ins[numlines].instruction = DBM_KEY;   // Get a primary key value
+                        (*stmt)->ins[numlines].P1 = t;                  // using cursor t
+                        (*stmt)->ins[numlines].P2 = ++rmax;             // into a new register
+                        numlines++;
+                        isPK = 1;
+                    }
+               }
+
+               if(!isPK) {
+                    // Add first column of WHERE clause (always present)
+                    for(int t = 0; t < tablelist->num_tables; t++) {
+                        for(int c = 0; c < tablelist->tables[t].num_cols; c++) {
+                            if(!strcmp(sql_stmt->query.select.where_conds[i].op1.name, tablelist->tables[t].create->query.createTable.cols[c].name)) {
+                                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                                (*stmt)->ins[numlines].instruction = DBM_COLUMN;    // Get a column value
+                                (*stmt)->ins[numlines].P1 = t;                      // Using cursor t
+                                (*stmt)->ins[numlines].P2 = c;                      // from column c
+                                (*stmt)->ins[numlines].P3 = ++rmax;                 // into a new register
+                                numlines++;
+                                break;
+                            }
                         }
                     }
-                    (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-                    (*stmt)->ins[numlines].instruction = DBM_COLUMN;     // Get a column value
-                    (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
-                    (*stmt)->ins[numlines].P2 = colnum;                  // from column number colnum
-                    (*stmt)->ins[numlines].P3 = ++rmax;                  // into a new register
-                    numlines++;
-                }
+               }
 
                 // Check if the operation is unary or binary
                 if(sql_stmt->query.select.where_conds[i].op != OP_ISNULL && sql_stmt->query.select.where_conds[i].op != OP_ISNOTNULL) {
@@ -329,18 +340,19 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                         numlines++;
                     } else if(sql_stmt->query.select.where_conds[i].op2Type == OP2_COL) {
                         // Store the second column, if there is one
-                        for(int j = 0; j < ncols; j++) {
-                            if(!strcmp(sql_stmt->query.select.where_conds[i].op2.col.name, create_table_stmt->query.createTable.cols[j].name)) {
-                                colnum = j;
-                                break;
+                        for(int t = 0; t < tablelist->num_tables; t++) {
+                            for(int c = 0; c < tablelist->tables[t].num_cols; c++) {
+                                if(!strcmp(sql_stmt->query.select.where_conds[i].op2.col.name, tablelist->tables[t].create->query.createTable.cols[c].name)) {
+                                    (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                                    (*stmt)->ins[numlines].instruction = DBM_COLUMN;    // Get a column value
+                                    (*stmt)->ins[numlines].P1 = t;                      // using cursor t
+                                    (*stmt)->ins[numlines].P2 = c;                      // from column c
+                                    (*stmt)->ins[numlines].P3 = ++rmax;                 // into a new register
+                                    numlines++;
+                                    break;
+                                }
                             }
                         }
-                        (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-                        (*stmt)->ins[numlines].instruction = DBM_COLUMN; // Get a column value
-                        (*stmt)->ins[numlines].P1 = 0;                   // using cursor 0
-                        (*stmt)->ins[numlines].P2 = colnum;              // into column number colnum
-                        (*stmt)->ins[numlines].P3 = ++rmax;              // into a new register
-                        numlines++;
                     }
                 } else {
                     // Store a null if the operation is unary
@@ -383,71 +395,77 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             // Select columns in main clause
             int num_cols;
             if(sql_stmt->query.select.select_ncols != SELECT_ALL) {
-                num_cols = sql_stmt->query.select.select_ncols;
-                for(int i = 0; i < sql_stmt->query.select.select_ncols; i++) {
-                    if(!strcmp(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[pk].name)) {
-                        (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-                        (*stmt)->ins[numlines].instruction = DBM_KEY;        // Get a primary key value
-                        (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
-                        (*stmt)->ins[numlines].P2 = ++rmax;                  // into a new register
-                        numlines++;
+                for(int t = 0; t < tablelist->num_tables; t++) {
+                    tablelist->tables[t].start_reg = rmax + 1;
 
-                        continue;
-                    }
-                
-                    // Get the column number
-                    int colnum;
-                    for(int j = 0; j < ncols; j++) {
-                        if(!strcmp(sql_stmt->query.select.select_cols[i].name, create_table_stmt->query.createTable.cols[j].name)) {
-                            colnum = j;
-                            break;
+                    for(int i = 0; i < sql_stmt->query.select.select_ncols; i++) {
+                        if(!strcmp(sql_stmt->query.select.select_cols[i].name, tablelist->tables[t].create->query.createTable.cols[tablelist->tables[t].pk].name)) {
+                            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                            (*stmt)->ins[numlines].instruction = DBM_KEY;   // Get a primary key value
+                            (*stmt)->ins[numlines].P1 = t;                  // Using cursor t
+                            (*stmt)->ins[numlines].P2 = ++rmax;             // into a new register
+                            tablelist->tables[t].num_cols_selected++;
+                            numlines++;
+                            continue;
+                        }
+
+                        for(int c = 0; c < tablelist->tables[t].num_cols; c++) {
+                            if(!strcmp(sql_stmt->query.select.select_cols[i].name, tablelist->tables[t].create->query.createTable.cols[c].name) && c != tablelist->tables[t].pk) {
+                                // Store the column value
+                                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                                (*stmt)->ins[numlines].instruction = DBM_COLUMN;    // Get a column value
+                                (*stmt)->ins[numlines].P1 = t;                      // using cursor t
+                                (*stmt)->ins[numlines].P2 = c;                      // from column c
+                                (*stmt)->ins[numlines].P3 = ++rmax;                 // into a new register
+                                tablelist->tables[t].num_cols_selected++;
+                                numlines++;
+                                break;
+                            }
                         }
                     }
- 
-                    // Store the column value
-                    (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-                    (*stmt)->ins[numlines].instruction = DBM_COLUMN;     // Get a column value
-                    (*stmt)->ins[numlines].P1 = 0;                       // using cursor 0
-                    (*stmt)->ins[numlines].P2 = colnum;                  // from column number colnum
-                    (*stmt)->ins[numlines].P3 = ++rmax;                  // into a new register
-                    numlines++;
                 }
             } else {
                 // Handle "SELECT *"
-                num_cols = create_table_stmt->query.createTable.ncols;
-                (*stmt)->ins = realloc((*stmt)->ins, (numlines + num_cols) * sizeof(chidb_instruction));
-                for(int i = 0; i < num_cols; i++) {
-                    if(i == pk) {
-                        (*stmt)->ins[numlines].instruction = DBM_KEY;   // Get a primary key value
-                        (*stmt)->ins[numlines].P1 = 0;                  // Using cursor 0
-                        (*stmt)->ins[numlines].P2 = ++rmax;             // into a new register
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + tablelist->num_cols) * sizeof(chidb_instruction));
+                for(int t = 0; t < tablelist->num_cols; t++) {
+                    tablelist->tables[t].start_reg = rmax + 1;
+                    for(int c = 0; c < tablelist->tables[t].num_cols; c++) {
+                        if(c == tablelist->tables[t].pk) {
+                            (*stmt)->ins[numlines].instruction = DBM_KEY;   // Get a primary key value
+                            (*stmt)->ins[numlines].P1 = t;                  // using cursor t
+                            (*stmt)->ins[numlines].P2 = ++rmax;             // into a new register
 
+                            numlines++;
+                            continue;
+                        }
+
+                        // Store the column value
+                        (*stmt)->ins[numlines].instruction = DBM_COLUMN;    // Get a column value
+                        (*stmt)->ins[numlines].P1 = t;                      // using cursor t
+                        (*stmt)->ins[numlines].P2 = c;                      // from column c
+                        (*stmt)->ins[numlines].P3 = ++rmax;                 // into a new register
                         numlines++;
-                        continue;
                     }
-                    
-                    // Store the column value
-                    (*stmt)->ins[numlines].instruction = DBM_COLUMN;    // Get a column value
-                    (*stmt)->ins[numlines].P1 = 0;                      // using cursor 0
-                    (*stmt)->ins[numlines].P2 = i;                      // from column i
-                    (*stmt)->ins[numlines].P3 = ++rmax;                 // into a new register
-                    numlines++;
                 }
             }
 
-            // Get Result Row
-            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-            (*stmt)->ins[numlines].instruction = DBM_RESULTROW;         // Get a result row
-            (*stmt)->ins[numlines].P1 = rmax - num_cols + 1;            // Identify start register
-            (*stmt)->ins[numlines].P2 = num_cols;                       // Identify the number of columns in the result
-            numlines++;
+            for(int t = 0; t < tablelist->num_tables; t++) {
+                // Get Result Row
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                (*stmt)->ins[numlines].instruction = DBM_RESULTROW;                 // Get a result row
+                (*stmt)->ins[numlines].P1 = tablelist->tables[t].start_reg;         // Identify start register
+                (*stmt)->ins[numlines].P2 = tablelist->tables[t].num_cols_selected; // Identify the number of columns in the result
+                numlines++;
+            }
 
             // Set up a jump for multiple result rows (NEXT)
-            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-            (*stmt)->ins[numlines].instruction = DBM_NEXT;       // Continue to next result row
-            (*stmt)->ins[numlines].P1 = 0;                       // with cursor 0
-            (*stmt)->ins[numlines].P2 = 3;                       // return to instruction 3
-            numlines++;
+            for(int t = tablelist->num_tables - 1; t >= 0; t++) {
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                (*stmt)->ins[numlines].instruction = DBM_NEXT;  // Continue to next result row
+                (*stmt)->ins[numlines].P1 = t;                  // with cursor t
+                (*stmt)->ins[numlines].P2 = nextjmp;            // return to instruction nextjmp
+                numlines++;
+            }
 
             // Update any conditional jumps to point to this previous NEXT instruction
             if(sql_stmt->query.select.where_nconds > 0) {
@@ -464,13 +482,18 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             }
 
             // Close the cursor
-            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-            (*stmt)->ins[numlines].instruction = DBM_CLOSE;      // Close the cursor
-            (*stmt)->ins[numlines].P1 = 0;                       // number 0
+            for(int t = 0; t < tablelist->num_tables; t++) {
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                (*stmt)->ins[numlines].instruction = DBM_CLOSE;      // Close the cursor
+                (*stmt)->ins[numlines].P1 = t;                       // number t
+                numlines++;
+            }
 
-            // Set the jump for REWIND (always indexed at 2)
-            (*stmt)->ins[2].P2 = numlines;
-            numlines++;
+            // Set the jump for REWIND
+            for(int i = 0; i < numlines; i++) {
+                if((*stmt)->ins[i].instruction == DBM_REWIND)
+                    (*stmt)->ins[i].P2 = numlines - 1;
+            }
 
             // Halt execution
             (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
