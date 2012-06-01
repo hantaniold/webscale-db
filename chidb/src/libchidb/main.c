@@ -228,6 +228,34 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
     (*stmt)->sql = sql_stmt;
     (*stmt)->create_table = create_table_stmt;
 
+    // Initialize the table list struct
+    if(sql_stmt->type == STMT_SELECT) {
+        table_l *tablelist = malloc(sizeof(tablelist));
+        tablelist->num_tables = sql_stmt->query.select.from_ntables;
+        tablelist->tables = calloc(sql_stmt->query.select.from_ntables, sizeof(tabledata));
+
+        // Add table data to the table list
+        for(int i = 0; i < tablelist->num_tables; i++) {
+            SchemaTableRow *sr = NULL;
+            tablelist->tables[i].name = sql_stmt->query.select.from_tables[i];
+            for(int j = 0; j < db->bt->schema_table_size; j++) {
+                if(!strcmp(tablelist->tables[i].name, db->bt->schema_table[j]->item_name)) {
+                    sr = db->bt->schema_table[j];
+                    tablelist->tables[i].root = sr->root_page;
+                    chidb_parser(sr->sql, &(tablelist->tables[i].create));
+                    tablelist->tables[i].num_cols = tablelist->tables[i].create->query.createTable.ncols;
+                    tablelist->tables[i].pk = tablelist->tables[i].create->query.createTable.pk;
+                    break;
+                }
+            }
+            if(sr)
+                break;
+        }
+    }
+
+    // Sort the table struct
+    // TODO
+
     switch(sql_stmt->type) {
         case STMT_SELECT:
         {
@@ -242,12 +270,14 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             numlines++;
 
             // Open the B-Tree
-            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-            (*stmt)->ins[numlines].instruction = DBM_OPENREAD;  // Open a B-Tree
-            (*stmt)->ins[numlines].P1 = 0;                       // with cursor 0
-            (*stmt)->ins[numlines].P2 = 0;                       // on the page in register 0
-            (*stmt)->ins[numlines].P3 = ncols;                   // having ncols columns
-            numlines++;
+            for(int i = 0; i < sql_stmt->query.select.from_ntables; i++) {
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));  // TODO: Unfinished
+                (*stmt)->ins[numlines].instruction = DBM_OPENREAD;  // Open a B-Tree
+                (*stmt)->ins[numlines].P1 = 0;                       // with cursor 0
+                (*stmt)->ins[numlines].P2 = 0;                       // on the page in register 0
+                (*stmt)->ins[numlines].P3 = ncols;                   // having ncols columns
+                numlines++;
+            }
 
             // Rewind the B-Tree
             (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));

@@ -137,12 +137,14 @@ struct table_data {
     char *name;
     int num_cols;
     int pk;
+    int root;
+    SQLStatement *create;
 };
 typedef struct table_data tabledata;
 
 struct table_list {
     int num_tables;
-    table_data *tables;
+    tabledata *tables;
 };
 typedef struct table_list table_l;
 
