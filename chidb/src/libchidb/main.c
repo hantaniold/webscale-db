@@ -427,7 +427,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             } else {
                 // Handle "SELECT *"
                 (*stmt)->ins = realloc((*stmt)->ins, (numlines + tablelist->num_cols) * sizeof(chidb_instruction));
-                for(int t = 0; t < tablelist->num_cols; t++) {
+                for(int t = 0; t < tablelist->num_tables; t++) {
                     tablelist->tables[t].start_reg = rmax + 1;
                     for(int c = 0; c < tablelist->tables[t].num_cols; c++) {
                         if(c == tablelist->tables[t].pk) {
@@ -459,7 +459,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             }
 
             // Set up a jump for multiple result rows (NEXT)
-            for(int t = tablelist->num_tables - 1; t >= 0; t++) {
+            for(int t = tablelist->num_tables - 1; t >= 0; t--) {
                 (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
                 (*stmt)->ins[numlines].instruction = DBM_NEXT;  // Continue to next result row
                 (*stmt)->ins[numlines].P1 = t;                  // with cursor t
