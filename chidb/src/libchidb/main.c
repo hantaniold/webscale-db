@@ -432,6 +432,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 (*stmt)->ins = realloc((*stmt)->ins, (numlines + tablelist->num_cols) * sizeof(chidb_instruction));
                 for(int t = 0; t < tablelist->num_tables; t++) {
                     tablelist->tables[t].start_reg = rmax + 1;
+                    tablelist->tables[t].num_cols_selected = tablelist->tables[t].create->query.createTable.ncols;
                     for(int c = 0; c < tablelist->tables[t].num_cols; c++) {
                         if(c == tablelist->tables[t].pk) {
                             (*stmt)->ins[numlines].instruction = DBM_KEY;   // Get a primary key value
