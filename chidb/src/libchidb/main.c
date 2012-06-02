@@ -256,8 +256,8 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                     break;
                 }
             }
-            if(sr)
-                break;
+            //if(sr)
+            //    break;
         }
     }
     
@@ -293,10 +293,11 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
         {
             int numlines = 0;
             int rmax = 0;
+            (*stmt)->ins = NULL;
 
             for(int t = 0; t < tablelist->num_tables; t++) {
                 // Store the page number
-                (*stmt)->ins = malloc(sizeof(chidb_instruction));
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
                 (*stmt)->ins[numlines].instruction = DBM_INTEGER;     // Integer type
                 (*stmt)->ins[numlines].P1 = tablelist->tables[t].root;// Store the root page
                 (*stmt)->ins[numlines].P2 = t;                        // into register t
@@ -705,7 +706,8 @@ int chidb_column_count(chidb_stmt *stmt)
 {
     switch (stmt->sql->type) {
         case (STMT_SELECT):
-            return (stmt->sql->query.select.select_ncols == SELECT_ALL) ? stmt->create_table->query.createTable.ncols : stmt->sql->query.select.select_ncols;
+            return (stmt->sql->query.select.select_ncols == SELECT_ALL) ? stmt->table_list->num_cols : stmt->sql->query.select.select_ncols;
+            //return (stmt->sql->query.select.select_ncols == SELECT_ALL) ? stmt->create_table->query.createTable.ncols : stmt->sql->query.select.select_ncols;
             break;
         case (STMT_INSERT):
             return stmt->sql->query.insert.nvalues;
@@ -728,7 +730,17 @@ const char *chidb_column_name(chidb_stmt* stmt, int col)
             if(stmt->sql->query.select.select_ncols != SELECT_ALL) {
                 return (stmt->sql->query.select.select_cols + col)->name;
             } else {
-                return stmt->create_table->query.createTable.cols[col].name;
+                int res = 0;
+                int t = 0;
+                while(res <= col) {
+                    if(res + stmt->table_list->tables[t].num_cols > col) {
+                        return stmt->table_list->tables[t].create->query.createTable.cols[col - res].name;
+                    } else {
+                        res += stmt->table_list->tables[t].num_cols;
+                        t++;
+                    }
+                }
+                //return stmt->create_table->query.createTable.cols[col].name;
             }
             break;
     }
