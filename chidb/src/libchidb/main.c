@@ -97,6 +97,12 @@ int chidb_close(chidb *db)
 	return CHIDB_OK;
 } 
 
+int table_pair_compare(const void* a, const void* b) {
+
+  return(((table_pair*) a)->table_size - ((table_pair*) b)->table_size);
+
+}
+
 int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
 {
     int err;
@@ -255,11 +261,32 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
         }
     }
     
-    //set the table_l of the statement for use by the dbm
-    (*stmt)->table_list = tablelist;
-
+   
     // Sort the table struct
     // TODO
+
+    tabledata* new_table_data = malloc(tablelist->num_tables * sizeof(tabledata));
+    table_pair* table_pair_list = malloc(tablelist->num_tables * sizeof(table_pair));
+    (*stmt)->input_dbm = init_dbm((*stmt),0,1);
+    init_lists(*stmt);
+    (*stmt)->initialized_dbm=1;
+    for(int ii = 0; ii < tablelist->num_tables; ii++) {
+      table_pair_list[ii].table_num = ii;
+      table_pair_list[ii].table_size = get_table_size((*stmt)->input_dbm, ii);
+    }
+    qsort(table_pair_list, tablelist->num_tables, sizeof(table_pair), table_pair_compare);
+    for(int ii = 0; ii<tablelist->num_tables; ii++) {
+      new_table_data[ii] = tablelist->tables[table_pair_list[ii].table_num];
+    }
+    free(tablelist->tables);
+    free(table_pair_list);
+    tablelist->tables = new_table_data;
+
+
+
+ //set the table_l of the statement for use by the dbm
+    (*stmt)->table_list = tablelist;
+
 
     switch(sql_stmt->type) {
         case STMT_SELECT:

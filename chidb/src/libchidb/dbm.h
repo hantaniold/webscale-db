@@ -120,6 +120,12 @@ struct table_list {
 };
 typedef struct table_list table_l;
 
+struct table_list_pair { // used for sorting
+  int table_num; // original number in the array
+  int table_size;
+};
+typedef struct table_list_pair table_pair;
+
 struct dbm {
 	uint32_t program_counter;
 	uint32_t tick_result; //stores the result of the last tick operation - used for error tracking
