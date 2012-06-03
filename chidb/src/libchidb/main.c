@@ -502,16 +502,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 (*stmt)->ins[numlines].P2 = nextjmp + t + 1;;
                 numlines++;
             }
-/*
-            // Set up a jump for multiple result rows (NEXT)
-            for(int t = tablelist->num_tables - 1; t >= 0; t--) {
-                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-                (*stmt)->ins[numlines].instruction = DBM_NEXT;                                                  // Continue to next result row
-                (*stmt)->ins[numlines].P1 = t;                                                                  // with cursor t
-                (*stmt)->ins[numlines].P2 = (t == 0) ? nextjmp : nextjmp - (tablelist->num_tables - t);         // return to instruction nextjmp - t
-                numlines++;
-            }
-*/
+
             // Update any conditional jumps to point to the first NEXT instruction
             if(sql_stmt->query.select.where_nconds > 0) {
                 for(int i = 0; i < numlines; i++) {
