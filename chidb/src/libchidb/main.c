@@ -481,14 +481,13 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 }
             }
 
-            for(int t = 0; t < tablelist->num_tables; t++) {
-                // Get Result Row
-                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-                (*stmt)->ins[numlines].instruction = DBM_RESULTROW;                 // Get a result row
-                (*stmt)->ins[numlines].P1 = tablelist->tables[t].start_reg;         // Identify start register
-                (*stmt)->ins[numlines].P2 = tablelist->tables[t].num_cols_selected; // Identify the number of columns in the result
-                numlines++;
-            }
+            // Get Result Row
+            (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+            (*stmt)->ins[numlines].instruction = DBM_RESULTROW;                     // Get a result row
+            (*stmt)->ins[numlines].P1 = tablelist->tables[0].start_reg;             // Identify start register
+            (*stmt)->ins[numlines].P2 = (sql_stmt->query.select.select_ncols == SELECT_ALL) ? tablelist->num_cols : sql_stmt->query.select.select_ncols;
+                                                                                    // Identify the number of columns in the result
+            numlines++;
 
             // Set up a jump for multiple result rows (NEXT)
             for(int t = tablelist->num_tables - 1; t >= 0; t--) {
