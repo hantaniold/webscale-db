@@ -302,7 +302,9 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 (*stmt)->ins[numlines].P1 = tablelist->tables[t].root;// Store the root page
                 (*stmt)->ins[numlines].P2 = t;                        // into register t
                 numlines++;
+            }
 
+            for(int t = 0; t < tablelist->num_tables; t++) {
                 // Open the B-Tree
                 (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
                 (*stmt)->ins[numlines].instruction = DBM_OPENREAD;          // Open a B-Tree
@@ -310,7 +312,11 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 (*stmt)->ins[numlines].P2 = t;                              // on the page in register t
                 (*stmt)->ins[numlines].P3 = tablelist->tables[t].num_cols;  // having num_cols columns
                 numlines++;
+            }
 
+            int nextjmp = numlines;
+
+            for(int t = 0; t < tablelist->num_tables; t++) {
                 // Rewind the B-Tree
                 (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
                 (*stmt)->ins[numlines].instruction = DBM_REWIND;     // Rewind to the beginning of the B-Tree
@@ -318,8 +324,6 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                 (*stmt)->ins[numlines].P2 = -1;                      // and if the table is empty, jump to CLOSE
                 numlines++;
             }
-
-            int nextjmp = numlines;
 
             // Select columns (0, 1, or 2) from WHERE clause
             for(int i = 0; i < sql_stmt->query.select.where_nconds; i++) {
@@ -490,15 +494,25 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             numlines++;
 
             // Set up a jump for multiple result rows (NEXT)
+            int firstnext = numlines;
             for(int t = tablelist->num_tables - 1; t >= 0; t--) {
                 (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
-                (*stmt)->ins[numlines].instruction = DBM_NEXT;  // Continue to next result row
-                (*stmt)->ins[numlines].P1 = t;                  // with cursor t
-                (*stmt)->ins[numlines].P2 = nextjmp;            // return to instruction nextjmp
+                (*stmt)->ins[numlines].instruction = DBM_NEXT;
+                (*stmt)->ins[numlines].P1 = t;
+                (*stmt)->ins[numlines].P2 = nextjmp + t + 1;;
                 numlines++;
             }
-
-            // Update any conditional jumps to point to this previous NEXT instruction
+/*
+            // Set up a jump for multiple result rows (NEXT)
+            for(int t = tablelist->num_tables - 1; t >= 0; t--) {
+                (*stmt)->ins = realloc((*stmt)->ins, (numlines + 1) * sizeof(chidb_instruction));
+                (*stmt)->ins[numlines].instruction = DBM_NEXT;                                                  // Continue to next result row
+                (*stmt)->ins[numlines].P1 = t;                                                                  // with cursor t
+                (*stmt)->ins[numlines].P2 = (t == 0) ? nextjmp : nextjmp - (tablelist->num_tables - t);         // return to instruction nextjmp - t
+                numlines++;
+            }
+*/
+            // Update any conditional jumps to point to the first NEXT instruction
             if(sql_stmt->query.select.where_nconds > 0) {
                 for(int i = 0; i < numlines; i++) {
                     if((*stmt)->ins[i].instruction == DBM_EQ ||
@@ -507,7 +521,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                        (*stmt)->ins[i].instruction == DBM_LE ||
                        (*stmt)->ins[i].instruction == DBM_GT ||
                        (*stmt)->ins[i].instruction == DBM_GE) {
-                        (*stmt)->ins[i].P2 = numlines - 1;
+                        (*stmt)->ins[i].P2 = firstnext;
                     }
                 }
             }
