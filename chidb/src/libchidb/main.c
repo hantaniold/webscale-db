@@ -113,6 +113,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
     if(err == CHIDB_EINVALIDSQL)
         return CHIDB_EINVALIDSQL;
 
+    int first_where_ops[10];
     // Check that the query is valid against our schema table
     int root_page;
     int ncols;
@@ -336,9 +337,12 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                         (*stmt)->ins[numlines].P1 = t;                  // using cursor t
                         (*stmt)->ins[numlines].P2 = ++rmax;             // into a new register
                         numlines++;
+                        first_where_ops[i] = t; //Now for each conditional we can look up what table the first col is from and PUSH SOME SIGMAS
                         isPK = 1;
                     }
                }
+
+
 
                if(!isPK) {
                     // Add first column of WHERE clause (always present)
@@ -351,6 +355,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                                 (*stmt)->ins[numlines].P2 = c;                      // from column c
                                 (*stmt)->ins[numlines].P3 = ++rmax;                 // into a new register
                                 numlines++;
+                                first_where_ops[i] = t; //Now for each conditional we can look up what table the first col is from and PUSH SOME SIGMAS
                                 break;
                             }
                         }
@@ -505,6 +510,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
 
             // Update any conditional jumps to point to the first NEXT instruction
             if(sql_stmt->query.select.where_nconds > 0) {
+                int j = 0;
                 for(int i = 0; i < numlines; i++) {
                     if((*stmt)->ins[i].instruction == DBM_EQ ||
                        (*stmt)->ins[i].instruction == DBM_NE ||
@@ -512,7 +518,11 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                        (*stmt)->ins[i].instruction == DBM_LE ||
                        (*stmt)->ins[i].instruction == DBM_GT ||
                        (*stmt)->ins[i].instruction == DBM_GE) {
-                        (*stmt)->ins[i].P2 = firstnext;
+                        int table_nr = first_where_ops[j];
+                        printf("TABLE NR: %d\n",table_nr);
+                        int offset = sql_stmt->query.select.from_ntables - table_nr - 1;
+                        (*stmt)->ins[i].P2 = firstnext + offset;
+                        j++;
                     }
                 }
             }
