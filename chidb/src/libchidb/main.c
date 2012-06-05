@@ -253,6 +253,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                     chidb_parser(sr->sql, &(tablelist->tables[i].create));
                     tablelist->tables[i].num_cols = tablelist->tables[i].create->query.createTable.ncols;
                     tablelist->tables[i].pk = tablelist->tables[i].create->query.createTable.pk;
+		    tablelist->tables[i].table_num = j;
                     tablelist->num_cols += tablelist->tables[i].create->query.createTable.ncols;
                     break;
                 }
@@ -273,7 +274,9 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
     (*stmt)->initialized_dbm=1;
     for(int ii = 0; ii < tablelist->num_tables; ii++) {
       table_pair_list[ii].table_num = ii;
-      table_pair_list[ii].table_size = get_table_size((*stmt)->input_dbm, ii);
+      table_pair_list[ii].table_size = get_table_size((*stmt)->input_dbm, tablelist->tables[ii].table_num);
+      //printf("table_name: %s\n", tablelist->tables[ii].name); 
+      //printf("table_size: %d\n", table_pair_list[ii].table_size);
     }
     qsort(table_pair_list, tablelist->num_tables, sizeof(table_pair), table_pair_compare);
     for(int ii = 0; ii<tablelist->num_tables; ii++) {
@@ -284,10 +287,12 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
     tablelist->tables = new_table_data;
 
 
-
  //set the table_l of the statement for use by the dbm
     (*stmt)->table_list = tablelist;
-
+    /*for(int ii=0; ii<tablelist->num_tables; ii++) {
+      printf("size of table %s: %d\n", tablelist->tables[ii].name, get_table_size((*stmt)->input_dbm, ii));
+    }
+    */
 
     switch(sql_stmt->type) {
         case STMT_SELECT:

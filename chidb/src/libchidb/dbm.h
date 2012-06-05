@@ -109,6 +109,7 @@ struct table_data {
     int num_cols_selected;
     int pk;
     int root;
+  int table_num;
     SQLStatement *create;
 };
 typedef struct table_data tabledata;
