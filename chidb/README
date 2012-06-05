@@ -15,3 +15,4 @@ Part III:
 Not implemented
 
 Part IV:
+All done, located within chidb_prepare in main.c. Basically the tables are sorted before any code is generated so that when the code is generated, the loops go from small to large, since the loops are generated in the order they are stored.
