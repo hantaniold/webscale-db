@@ -10,9 +10,10 @@ All done, all located in the compiler code in main.c. Multiple WHERE statements 
 SELECT * statements are handled in a few different locations: in the compiler and in the column name/type functions.
 
 Part II:
+Pushing sigmas is done in the chidb_prepare when we compile the where clauses, and when we specify the jumps for the compiled NEXT commands.
 
 Part III:
-Not implemented
+While we rewrote and tested our code for the index functions within the DBM, we have yet to implement key based lookup within the compiler.  
 
 Part IV:
-All done, located within chidb_prepare in main.c. Basically the tables are sorted before any code is generated so that when the code is generated, the loops go from small to large, since the loops are generated in the order they are stored.
+All done, located within chidb_prepare in main.c. Basically the tables are sorted before any code is generated so that when the code is generated, the loops go from small to large, since the loops are generated in the order they are stored.  The code to get the size of the tables is contained in dbm.c (the table size function)
