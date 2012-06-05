@@ -524,7 +524,7 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
                        (*stmt)->ins[i].instruction == DBM_GT ||
                        (*stmt)->ins[i].instruction == DBM_GE) {
                         int table_nr = first_where_ops[j];
-                        printf("TABLE NR: %d\n",table_nr);
+                        //printf("TABLE NR: %d\n",table_nr);
                         int offset = sql_stmt->query.select.from_ntables - table_nr - 1;
                         (*stmt)->ins[i].P2 = firstnext + offset;
                         j++;
@@ -553,10 +553,11 @@ int chidb_prepare(chidb *db, const char *sql, chidb_stmt **stmt)
             numlines++;
 
             (*stmt)->num_instructions = numlines;
-
+/*
             for(int i = 0; i < (*stmt)->num_instructions; i++) {
                 printf("Instruction: %i      Arguments: %i %i %i %i\n", (*stmt)->ins[i].instruction, (*stmt)->ins[i].P1, (*stmt)->ins[i].P2, (*stmt)->ins[i].P3, (*stmt)->ins[i].P4);
             }
+            */
 
             break;
         }
