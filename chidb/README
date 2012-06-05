@@ -1,0 +1,17 @@
+webscale-db
+==========
+
+Project 3
+=========
+
+
+Part I:
+All done, all located in the compiler code in main.c. Multiple WHERE statements are handled by loops, while multiple tables are coordinated using a struct called "tablelist".
+SELECT * statements are handled in a few different locations: in the compiler and in the column name/type functions.
+
+Part II:
+
+Part III:
+Not implemented
+
+Part IV:
